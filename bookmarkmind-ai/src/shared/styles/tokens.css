@@ -1,0 +1,370 @@
+/* ============================================================
+   AI 书签管家 — Design Token CSS 变量
+   设计方向：Marginalia — 个人图书馆
+
+   主旨：把用户收藏的书签视为"私人藏书"。
+   视觉比喻：下班后翻阅的参考阅览室 —— 深色木质桌面、灯下暖光、
+   每本书脊上烫金的馆藏编号。
+
+   ⚠️ 这套设计有意避开三个常见的 AI 生成默认：
+     1. 米色背景 + 高对比衬线 + 陶土色强调（已弃）
+     2. 近黑背景 + 单一亮色荧光强调（已弃 — 我们走暖色图书馆而非冷峻高科技）
+     3. 报纸版式 hairline + 零圆角 + 密集分栏（已弃 — 我们走卡片不是版面）
+
+   唯一签名元素：馆藏编号 stamp —— 每个书签带一枚小型等宽字体的
+   「BK·分类·编号」戳记，像图书馆的杜威十进制号。
+
+   用于 Shadow DOM 和 Options Page。
+   ============================================================ */
+
+:host,
+:root {
+  /* ============================================================
+     调色板 — 6 个命名色（深色默认 / 灯下暖光）
+     ============================================================ */
+
+  /* 墨黑 — 主画布，相当于图书馆关灯后的桌面 */
+  --bm-ink-900: #0F0E0C;
+  /* 皮革 — 主表面，相当于书桌皮面 */
+  --bm-leather-800: #1C1A17;
+  /* 布面 — 抬升表面，相当于书脊布面 */
+  --bm-cloth-700: #2B2722;
+  /* 灯琥珀 — 唯一强调色，台灯打在书页上的暖光 */
+  --bm-amber-500: #C8945A;
+  /* 羊皮纸 — 次级文字，相当于旧纸张上的铅笔字 */
+  --bm-parchment-400: #A39A8B;
+  /* 烟草色 — 边框 / 分隔线，相当于老烟丝 */
+  --bm-tobacco-600: #5A5147;
+
+  /* ---- 主色（衍生自 --bm-amber-500） ---- */
+  --bm-primary-50:  #FBF3E5;
+  --bm-primary-100: #F2E2C2;
+  --bm-primary-200: #E4C99A;
+  --bm-primary-300: #D6B172;
+  --bm-primary-400: #C8945A;
+  --bm-primary-500: #B5824A;
+  --bm-primary-600: #9A6E3B;
+  --bm-primary-700: #7A582E;
+  --bm-primary-800: #5C4220;
+  --bm-primary-900: #3E2C16;
+
+  /* ---- 中性色（暗色映射：ink → leather → cloth → parchment） ---- */
+  --bm-gray-0:   #1C1A17;   /* 主表面 */
+  --bm-gray-50:  #232017;   /* 轻微抬升 */
+  --bm-gray-100: #2B2722;   /* 抬升表面 */
+  --bm-gray-200: #3A352D;   /* 边框 hover */
+  --bm-gray-300: #4A4338;   /* 强分隔 */
+  --bm-gray-400: #6B6356;   /* 弱文字 */
+  --bm-gray-500: #8B8275;   /* 次级文字 */
+  --bm-gray-600: #A39A8B;   /* parchment */
+  --bm-gray-700: #C8C0B2;   /* 主要文字 */
+  --bm-gray-800: #E0DACE;   /* 标题文字 */
+  --bm-gray-900: #F0EBE0;   /* 高亮文字 */
+
+  /* ---- 语义色（保留原色调，改成适应暗色背景的版本） ---- */
+  --bm-success-50:  #1E2A14;
+  --bm-success-100: #2F4A1F;
+  --bm-success-500: #88C66E;
+  --bm-success-600: #B0E094;
+
+  --bm-warning-50:  #2E2516;
+  --bm-warning-100: #4A3A1F;
+  --bm-warning-500: #E8B86D;
+  --bm-warning-600: #F5D08C;
+
+  --bm-error-50:  #2E1A1A;
+  --bm-error-100: #4A2828;
+  --bm-error-500: #E08585;
+  --bm-error-600: #F0A8A8;
+
+  --bm-info-50:  #1A1F2E;
+  --bm-info-100: #28324A;
+  --bm-info-500: #8B97D6;
+  --bm-info-600: #A8B3E0;
+
+  /* ============================================================
+     字体 — 三角色系统（display / body / mono）
+     ============================================================ */
+
+  /* Display：现代衬线，文学感，用于签名时刻（标题、馆藏编号场景描述等）
+     用系统衬线栈，避免外网字体依赖 */
+  --bm-font-display: 'Iowan Old Style', 'Source Serif Pro', 'Charter',
+    'Georgia', 'Songti SC', 'STSong', serif;
+
+  /* Body：清晰 grotesque，用于大部分 UI */
+  --bm-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Helvetica Neue', sans-serif;
+
+  /* Mono：等宽，用于馆藏编号 stamp / URL / 数据 */
+  --bm-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'Cascadia Code',
+    Consolas, 'Liberation Mono', monospace;
+
+  /* ============================================================
+     类型尺度 — 1.2 比率，display 用更宽的字间距
+     ============================================================ */
+  --bm-text-xs:   11px;
+  --bm-text-sm:   12px;
+  --bm-text-base: 13px;
+  --bm-text-md:   14px;
+  --bm-text-lg:   16px;
+  --bm-text-xl:   20px;
+  --bm-text-2xl:  26px;
+  --bm-text-3xl:  34px;
+
+  --bm-font-normal:   400;
+  --bm-font-medium:   500;
+  --bm-font-semibold: 600;
+  --bm-font-bold:     700;
+
+  --bm-leading-tight:   1.25;
+  --bm-leading-snug:    1.35;
+  --bm-leading-normal:  1.5;
+  --bm-leading-relaxed: 1.65;
+
+  /* 字间距 — display 字距更松，像旧版印刷 */
+  --bm-tracking-tight:  -0.01em;
+  --bm-tracking-normal: 0;
+  --bm-tracking-wide:   0.04em;
+  --bm-tracking-stamp:  0.18em;   /* 馆藏编号专用，烫金烫印感 */
+
+  /* ============================================================
+     间距 — 4px 基线
+     ============================================================ */
+  --bm-space-0:   0px;
+  --bm-space-1:   4px;
+  --bm-space-2:   8px;
+  --bm-space-3:   12px;
+  --bm-space-4:   16px;
+  --bm-space-5:   20px;
+  --bm-space-6:   24px;
+  --bm-space-7:   28px;
+  --bm-space-8:   32px;
+  --bm-space-10:  40px;
+  --bm-space-12:  48px;
+  --bm-space-16:  64px;
+
+  /* ============================================================
+     圆角 — 比之前稍紧，让卡片更像"印张"而非"果冻"
+     ============================================================ */
+  --bm-radius-xs:   4px;
+  --bm-radius-sm:   6px;
+  --bm-radius-md:   10px;
+  --bm-radius-lg:   14px;
+  --bm-radius-xl:   20px;
+  --bm-radius-full: 9999px;
+
+  /* ============================================================
+     阴影 — 暖色阴影，模拟台灯侧光
+     ============================================================ */
+  --bm-shadow-panel: 0 14px 44px rgba(0, 0, 0, 0.45),
+                      0 4px 14px rgba(0, 0, 0, 0.30),
+                      0 0 0 1px rgba(200, 148, 90, 0.06);
+  --bm-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.30),
+                    0 2px 6px rgba(0, 0, 0, 0.20);
+  --bm-shadow-ball: 0 4px 16px rgba(0, 0, 0, 0.35),
+                    0 0 0 1px rgba(200, 148, 90, 0.08);
+  --bm-shadow-ball-hover: 0 8px 28px rgba(200, 148, 90, 0.25),
+                         0 0 0 1px rgba(200, 148, 90, 0.20);
+  --bm-shadow-focus: 0 0 0 3px rgba(200, 148, 90, 0.30);
+  --bm-shadow-stamp: 0 0 0 1px rgba(200, 148, 90, 0.35),
+                     0 1px 2px rgba(200, 148, 90, 0.15);
+
+  /* ============================================================
+     Z-index
+     ============================================================ */
+  --bm-z-base:        1000;
+  --bm-z-actionbar:   1001;
+  --bm-z-panel:       1002;
+  --bm-z-dropdown:    1003;
+  --bm-z-toast:       1004;
+  --bm-z-modal:       1005;
+  --bm-z-modal-overlay: 1004;
+
+  /* ============================================================
+     动效 — 比之前稍慢，更像"翻开书页"而非"弹窗"
+     ============================================================ */
+  --bm-duration-instant: 0ms;
+  --bm-duration-fast:    180ms;
+  --bm-duration-normal:  280ms;
+  --bm-duration-slow:    420ms;
+  --bm-duration-slowest: 600ms;
+
+  --bm-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --bm-ease-out:     cubic-bezier(0.0, 0, 0.2, 1);
+  --bm-ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  --bm-ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 翻页 / 抽屉专用 — 慢启动 + 慢收尾 */
+  --bm-ease-drawer:  cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ============================================================
+     语义层（Semantic aliases） — 名字绑用途，不绑值
+     设计师在这里思考"这块用什么角色"，light/dark 只换底色不动名。
+     这一层是给 Options/Shadow DOM 用的，不是给 tailwind 的。
+     ============================================================ */
+
+  /* 表面层级 — 由低到高 */
+  --bm-bg-canvas:    var(--bm-ink-900);       /* 页面底层 / 主画布 */
+  --bm-bg-surface:   var(--bm-leather-800);   /* 卡片 / 表单 / 浮层 */
+  --bm-bg-elevated:  var(--bm-cloth-700);     /* 模态框 / 下拉 / 抬升 */
+  --bm-bg-input:     var(--bm-leather-800);   /* 输入框底色 */
+  --bm-bg-overlay:   var(--bm-cloth-700);     /* hover / active 抬升 */
+
+  /* 边框层级 */
+  --bm-border-subtle:  var(--bm-tobacco-600);  /* 普通分隔 */
+  --bm-border-strong:  var(--bm-gray-300);     /* 强分隔 / 卡片描边 */
+  --bm-border-accent:  var(--bm-amber-500);    /* 强调描边 / focus */
+
+  /* 文字层级 */
+  --bm-text-primary:    var(--bm-gray-700);    /* 主要正文 */
+  --bm-text-secondary:  var(--bm-gray-500);    /* 次要文字 / 描述 */
+  --bm-text-muted:      var(--bm-gray-400);    /* 弱化 / 占位 */
+  --bm-text-heading:    var(--bm-gray-800);    /* 标题 / H1-H2 */
+  --bm-text-on-accent:  var(--bm-ink-900);     /* 强调色上的文字（浅色主题里会变白） */
+  --bm-text-accent:     var(--bm-amber-500);   /* 链接 / 强调文字 */
+
+  /* 状态语义 */
+  --bm-state-success: var(--bm-success-500);
+  --bm-state-warning: var(--bm-warning-500);
+  --bm-state-error:   var(--bm-error-500);
+  --bm-state-info:    var(--bm-info-500);
+
+  /* 强调色光晕 — dark 默认琥珀，light 覆盖为橙色 */
+  --bm-accent-04: rgba(200, 148, 90, 0.04);
+  --bm-accent-06: rgba(200, 148, 90, 0.06);
+  --bm-accent-10: rgba(200, 148, 90, 0.10);
+  --bm-accent-18: rgba(200, 148, 90, 0.18);
+  --bm-accent-20: rgba(200, 148, 90, 0.20);
+  --bm-accent-25: rgba(200, 148, 90, 0.25);
+  --bm-accent-30: rgba(200, 148, 90, 0.30);
+  --bm-accent-40: rgba(200, 148, 90, 0.40);
+  --bm-accent-55: rgba(200, 148, 90, 0.55);
+}
+
+/* ============================================================
+   浅色变体 — Vlog Prompt 风格
+   参考 https://vlogprompt.com/ ：暖石白底、宋体标题、橙色 CTA
+   ============================================================ */
+:host([data-theme="light"]),
+[data-theme="light"] {
+  --bm-ink-900: #FAFAF9;
+  --bm-leather-800: #FFFFFF;
+  --bm-cloth-700: #F5F5F4;
+  --bm-amber-500: #EA580C;
+  --bm-parchment-400: #78716C;
+  --bm-tobacco-600: #E7E5E4;
+
+  --bm-gray-0:   #FFFFFF;
+  --bm-gray-50:  #FAFAF9;
+  --bm-gray-100: #F5F5F4;
+  --bm-gray-200: #E7E5E4;
+  --bm-gray-300: #D6D3D1;
+  --bm-gray-400: #A8A29E;
+  --bm-gray-500: #78716C;
+  --bm-gray-600: #57534E;
+  --bm-gray-700: #44403C;
+  --bm-gray-800: #1C1917;
+  --bm-gray-900: #0C0C0C;
+
+  --bm-primary-50:  #FFF7ED;
+  --bm-primary-100: #FFEDD5;
+  --bm-primary-200: #FED7AA;
+  --bm-primary-300: #FDBA74;
+  --bm-primary-400: #FB923C;
+  --bm-primary-500: #EA580C;
+  --bm-primary-600: #C2410C;
+  --bm-primary-700: #9A3412;
+  --bm-primary-800: #7C2D12;
+  --bm-primary-900: #431407;
+
+  --bm-font-display: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC',
+    'Georgia', serif;
+  --bm-font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  --bm-radius-md:   12px;
+  --bm-radius-lg:   16px;
+  --bm-radius-xl:   24px;
+
+  --bm-accent-04: rgba(234, 88, 12, 0.04);
+  --bm-accent-06: rgba(234, 88, 12, 0.06);
+  --bm-accent-10: rgba(234, 88, 12, 0.10);
+  --bm-accent-18: rgba(234, 88, 12, 0.18);
+  --bm-accent-20: rgba(234, 88, 12, 0.20);
+  --bm-accent-25: rgba(234, 88, 12, 0.25);
+  --bm-accent-30: rgba(234, 88, 12, 0.30);
+  --bm-accent-40: rgba(234, 88, 12, 0.40);
+  --bm-accent-55: rgba(234, 88, 12, 0.55);
+
+  /* Semantic colors — 必须覆盖，否则浅色背景下还是暗色 */
+  --bm-success-50:  #EAF3DE;
+  --bm-success-100: #C0DD97;
+  --bm-success-500: #3B6D11;
+  --bm-success-600: #27500A;
+
+  --bm-warning-50:  #FAEEDA;
+  --bm-warning-100: #FAC775;
+  --bm-warning-500: #BA7517;
+  --bm-warning-600: #854F0B;
+
+  --bm-error-50:  #FCEBEB;
+  --bm-error-100: #F7C1C1;
+  --bm-error-500: #E24B4A;
+  --bm-error-600: #A32D2D;
+
+  --bm-info-50:  #EEEDFE;
+  --bm-info-100: #CECBF6;
+  --bm-info-500: #534AB7;
+  --bm-info-600: #3C3489;
+
+  --bm-shadow-panel: 0 20px 60px rgba(12, 12, 12, 0.06),
+                      0 4px 16px rgba(12, 12, 12, 0.04);
+  --bm-shadow-card: 0 4px 20px rgba(12, 12, 12, 0.05),
+                    0 1px 4px rgba(12, 12, 12, 0.03);
+  --bm-shadow-ball: 0 4px 16px rgba(12, 12, 12, 0.08),
+                    0 0 0 1px rgba(12, 12, 12, 0.04);
+  --bm-shadow-ball-hover: 0 8px 28px rgba(234, 88, 12, 0.22),
+                         0 0 0 1px rgba(234, 88, 12, 0.18);
+  --bm-shadow-focus: 0 0 0 3px rgba(234, 88, 12, 0.25);
+  --bm-shadow-stamp: 0 0 0 1px rgba(234, 88, 12, 0.20),
+                     0 1px 2px rgba(234, 88, 12, 0.12);
+
+  --bm-text-on-accent: #FFFFFF;
+  --bm-bg-canvas:    var(--bm-ink-900);
+  --bm-bg-surface:   var(--bm-leather-800);
+  --bm-bg-elevated:  #FBF7F2;
+  --bm-bg-input:     #FFFFFF;
+  --bm-bg-overlay:   var(--bm-cloth-700);
+  --bm-border-subtle:  rgba(12, 12, 12, 0.08);
+  --bm-border-strong:  var(--bm-gray-200);
+  --bm-border-accent:  var(--bm-amber-500);
+  --bm-text-primary:    var(--bm-gray-800);
+  --bm-text-secondary:  var(--bm-gray-600);
+  --bm-text-muted:      var(--bm-gray-400);
+  --bm-text-heading:    var(--bm-gray-900);
+  --bm-text-accent:     var(--bm-amber-500);
+}
+
+/* ============================================================
+   自定义滚动条（Options 页面 document 内使用）
+   暖色琥珀 thumb，与 Shadow DOM 内的 .bm-scrollbar 保持一致
+   ============================================================ */
+.bm-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bm-tobacco-600) transparent;
+}
+.bm-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.bm-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bm-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--bm-tobacco-600);
+  border-radius: 3px;
+  transition: background .22s var(--bm-ease-out);
+}
+.bm-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--bm-amber-500);
+}

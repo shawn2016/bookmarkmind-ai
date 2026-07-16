@@ -1,0 +1,78 @@
+{
+  "manifest_version": 3,
+  "name": "AI 书签管家",
+  "version": "1.0.0",
+  "description": "AI 驱动的 Chrome 书签管理扩展 — 收藏即整理，搜索即对话",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "tabs",
+    "scripting",
+    "contextMenus",
+    "commands",
+    "alarms",
+    "notifications",
+    "history"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "assets/index.tsx-loader-But6pjCr.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "src/options/index.html",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "commands": {
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Alt+B"
+      },
+      "description": "展开/收起悬浮面板"
+    },
+    "bookmark-current": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "收藏当前页面"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "assets/globe-2DA5Xby1.js",
+        "assets/format-Cb5-k3Zx.js",
+        "assets/api-url-CXEvnAra.js",
+        "assets/settings-BOfzAWYR.js",
+        "assets/index.tsx-D9qcO9LW.js"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}

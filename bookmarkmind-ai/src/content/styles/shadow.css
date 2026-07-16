@@ -1,0 +1,31 @@
+/* ============================================================
+   Shadow DOM — Additional CSS (keyframes already in shadow-root.ts)
+   This file can be imported as reference; actual injection is done
+   via the inline <style> in shadow-root.ts
+   ============================================================ */
+
+/*
+ * Note: All keyframe animations and global resets are defined
+ * inline in shadow-root.ts to ensure they're available immediately
+ * when the Shadow DOM is created.
+ *
+ * This file serves as documentation for the CSS architecture.
+ *
+ * Keyframes defined:
+ *   @keyframes bm-blink         — streaming cursor blink (530ms)
+ *   @keyframes bm-bounce-dot    — typing indicator dots (staggered)
+ *   @keyframes bm-slide-in-right  — toast slide-in
+ *   @keyframes bm-slide-up      — batch action bar slide-up
+ *   @keyframes bm-fade-in       — message/appear animations
+ *   @keyframes bm-panel-enter   — panel scale + opacity
+ *   @keyframes bm-actionbar-enter — action bar slide-in
+ *
+ * Utility classes:
+ *   .bm-scrollbar    — custom 6px scrollbar
+ *   .bm-truncate     — single-line text truncation
+ *   .bm-line-clamp-2 — two-line text clamp
+ *   .bm-sr-only      — screen-reader only
+ *
+ * Design tokens are also injected inline for Shadow DOM isolation.
+ * They mirror src/shared/styles/tokens.css exactly.
+ */

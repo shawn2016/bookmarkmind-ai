@@ -1,0 +1,153 @@
+/* ============================================================
+   AI 书签管家 — Options Page Specific CSS
+   ============================================================ */
+
+/* ---- Minimal reset for Options page (preflight is disabled) ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+/* Remove default button outline on focus; rely on :focus-visible below */
+button:focus {
+  outline: none;
+}
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--bm-font-sans);
+  background: var(--bm-gray-50);
+  color: var(--bm-gray-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Scrollbar Styling ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bm-gray-300);
+  border-radius: var(--bm-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bm-gray-400);
+}
+
+/* ---- Card Styles ---- */
+.bm-card {
+  background: var(--bm-gray-0);
+  border: 1px solid var(--bm-gray-200);
+  border-radius: var(--bm-radius-lg);
+  padding: var(--bm-space-6);
+  transition: transform var(--bm-duration-normal) var(--bm-ease-spring),
+              box-shadow var(--bm-duration-normal) var(--bm-ease-out);
+}
+
+.bm-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--bm-shadow-card);
+}
+
+/* ---- Focus Styles ---- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--bm-shadow-focus);
+}
+
+/* ---- Animations ---- */
+@keyframes bmFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bmSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Spinner utility ---- */
+.animate-spin {
+  animation: bmSpin 1s linear infinite;
+}
+
+/* ---- Transition utility classes ---- */
+.bm-transition-bg {
+  transition: background .22s var(--bm-ease-out);
+}
+
+.bm-transition-all {
+  transition: background .22s var(--bm-ease-out),
+              color .22s var(--bm-ease-out),
+              transform .32s var(--bm-ease-spring);
+}
+
+/* ---- Active press effect ---- */
+.bm-press:active {
+  transform: scale(0.97);
+}
+
+/* ---- Sidebar item transition ---- */
+.bm-nav-item {
+  transition: background .22s var(--bm-ease-out),
+              color .22s var(--bm-ease-out),
+              transform .32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bm-nav-item:active {
+  transform: scale(0.985);
+}
+
+/* ---- Card hover lift ---- */
+.bm-card-lift {
+  transition: transform var(--bm-duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow var(--bm-duration-normal) var(--bm-ease-out);
+}
+
+.bm-card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--bm-shadow-card);
+}
+
+/* ---- Subsection spacing (no divider lines) ---- */
+.bm-subsection + .bm-subsection {
+  margin-top: 12px;
+  padding-top: 4px;
+}
