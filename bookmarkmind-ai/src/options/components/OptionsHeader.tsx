@@ -15,8 +15,7 @@ import {
 } from 'lucide-react';
 import { useOptionsStore } from '../store/optionsStore';
 import type { ThemeMode } from '@shared/types';
-
-const GITHUB_URL = 'https://github.com/bookmarkmind-ai';
+import { GITHUB_REPO_URL } from '@shared/constants/repo';
 
 /* ---- 格式化相对时间 ---- */
 function formatRelative(ts: number | null, now: number): string {
@@ -311,7 +310,7 @@ const OptionsHeader: React.FC = () => {
         <ThemeToggle />
 
         <a
-          href={GITHUB_URL}
+          href={GITHUB_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center rounded-bm-md outline-none"

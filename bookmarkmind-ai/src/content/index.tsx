@@ -15,6 +15,7 @@ import {
   isChromeInternalPage,
   isPdfPage,
   isInIframe,
+  shouldShowBall,
 } from "@shared/utils/url-match";
 import { safeStorageGet, isContextValid } from "@shared/utils/chrome-api";
 import App from "@content/App";
@@ -41,24 +42,7 @@ async function init(): Promise<void> {
     const config: ExtensionConfig =
       result[STORAGE_KEYS.CONFIG] ?? DEFAULT_CONFIG;
 
-    if (!config.ball.enabled) return;
-
-    if (config.ball.whitelistMode) {
-      const matched = config.ball.disabledSites.some(p => {
-        try {
-          const r = new RegExp(
-            "^" +
-              p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") +
-              "$",
-            "i",
-          );
-          return r.test(window.location.href);
-        } catch {
-          return false;
-        }
-      });
-      if (!matched) return;
-    }
+    if (!shouldShowBall(config.ball, window.location.href)) return;
   } catch {
     return;
   }

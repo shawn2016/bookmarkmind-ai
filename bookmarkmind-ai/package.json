@@ -2,6 +2,14 @@
   "name": "bookmarkmind-ai",
   "version": "1.0.0",
   "description": "AI 书签管家 — AI 驱动的 Chrome 书签管理扩展",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shawn2016/bookmarkmind-ai.git"
+  },
+  "homepage": "https://github.com/shawn2016/bookmarkmind-ai#readme",
+  "bugs": {
+    "url": "https://github.com/shawn2016/bookmarkmind-ai/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

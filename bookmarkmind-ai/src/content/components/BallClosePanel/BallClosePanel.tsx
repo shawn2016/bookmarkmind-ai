@@ -4,9 +4,10 @@
 
 import React, { useCallback } from "react";
 import { X, EyeOff, Globe, Minimize2, Maximize2 } from "lucide-react";
-import { useContentStore } from "@content/store/contentStore";
+import { useContentStore, syncConfigToStore } from "@content/store/contentStore";
 import { BALL_BOTTOM_SAFE } from "@content/hooks/useDrag";
 import { safeSendMessage } from "@shared/utils/chrome-api";
+import { generateSitePattern } from "@shared/utils/url-match";
 import { getEffectiveBallSize } from "@shared/utils/ball-size";
 
 export const BallClosePanel: React.FC = () => {
@@ -59,8 +60,11 @@ export const BallClosePanel: React.FC = () => {
 
   const handlePermanentHide = useCallback(async () => {
     try {
+      const pattern = generateSitePattern(window.location.href);
+      if (!pattern) {
+        throw new Error('invalid url');
+      }
       const hostname = new URL(window.location.href).hostname;
-      const pattern = `*://${hostname}/*`;
       const response = await safeSendMessage<{
         config?: { ball: { disabledSites: string[] } };
       }>({ type: "SETTINGS_GET_ALL" });
@@ -74,13 +78,17 @@ export const BallClosePanel: React.FC = () => {
           type: "SETTINGS_SET",
           payload: { key: "ball.disabledSites", value: sites },
         });
+        syncConfigToStore({
+          ...response.config,
+          ball: { ...response.config.ball, disabledSites: sites },
+        } as import('@shared/types').ExtensionConfig);
       }
 
       setBallSessionHidden(true);
       setBallClosePanelVisible(false);
       useContentStore.getState().pushToast({
         type: "success",
-        message: `已在 ${hostname} 永久隐藏悬浮球`,
+        message: `已在 ${hostname} 永久隐藏，可在设置→悬浮球中恢复`,
       });
     } catch {
       useContentStore.getState().pushToast({

@@ -455,13 +455,22 @@ async function handleMessage(
           timeout: 10000,
           dailyLimit: 100,
         });
-        const ok = await providerInstance.testConnection();
-        if (ok) {
-          return { success: true, message: `连接成功 (${provider}/${model ?? 'gpt-4o-mini'})` };
+        const result = await providerInstance.testConnection();
+        if (result.success) {
+          return {
+            success: true,
+            message:
+              result.message ??
+              `连接成功 (${provider}/${model ?? 'gpt-4o-mini'})`,
+            models: result.models,
+          };
         }
         return {
           success: false,
-          message: `连接失败 — 请检查 API Key、模型名称和网络。Provider: ${provider}`,
+          message:
+            result.message ??
+            `连接失败 — 请检查 API Key、模型名称和网络。Provider: ${provider}`,
+          models: [],
         };
       } catch (err) {
         return {

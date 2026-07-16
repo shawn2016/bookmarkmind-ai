@@ -2,8 +2,10 @@
 // App — Content Script Root Component
 // ============================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useContentStore } from '@content/store/contentStore';
+import { shouldShowBall } from '@shared/utils/url-match';
+import { useBallHoverPointer } from '@content/hooks/useBallHover';
 import { FloatingBall } from '@content/components/FloatingBall/FloatingBall';
 import { MiniActionBar } from '@content/components/MiniActionBar/MiniActionBar';
 import { BallClosePanel } from '@content/components/BallClosePanel/BallClosePanel';
@@ -19,6 +21,13 @@ const App: React.FC = () => {
   const ballClosePanelVisible = useContentStore((s) => s.ballClosePanelVisible);
   const panelVisible = useContentStore((s) => s.panelVisible);
   const modalState = useContentStore((s) => s.modalState);
+
+  const ballVisible = useMemo(() => {
+    if (ballSessionHidden) return false;
+    return shouldShowBall(ballConfig, window.location.href);
+  }, [ballConfig, ballSessionHidden]);
+
+  useBallHoverPointer();
 
   // Monitor fullscreen changes for auto-hide
   useEffect(() => {
@@ -55,7 +64,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  if (!ballConfig.enabled || ballSessionHidden) return null;
+  if (!ballVisible) return null;
 
   return (
     <>

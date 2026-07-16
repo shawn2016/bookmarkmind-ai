@@ -5,6 +5,11 @@ import type { ModelConfig, ClassifyResult } from '@shared/types';
 import type { AIProvider } from './provider';
 import { parseSSEStream } from './stream';
 import { buildClassifyPrompt } from './prompt';
+import {
+  parseOpenAIModelsPayload,
+  getAnthropicFallbackModels,
+  type ConnectionTestResult,
+} from './models';
 
 export class AnthropicProvider implements AIProvider {
   private readonly config: ModelConfig;
@@ -147,14 +152,32 @@ export class AnthropicProvider implements AIProvider {
 
   // ---- testConnection ----
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<ConnectionTestResult> {
     try {
       if (this.useBearerAuth()) {
         const response = await fetch(`${this.baseUrl}/models`, {
           headers: { Authorization: `Bearer ${this.config.apiKey}` },
           signal: AbortSignal.timeout(10000),
         });
-        return response.ok;
+
+        if (!response.ok) {
+          return {
+            success: false,
+            models: [],
+            message: `连接失败 (${response.status})`,
+          };
+        }
+
+        const payload = await response.json();
+        const models = parseOpenAIModelsPayload(payload);
+        return {
+          success: true,
+          models: models.length > 0 ? models : getAnthropicFallbackModels(),
+          message:
+            models.length > 0
+              ? `连接成功，发现 ${models.length} 个可用模型`
+              : '连接成功',
+        };
       }
 
       const response = await fetch(`${this.baseUrl}/messages`, {
@@ -167,9 +190,26 @@ export class AnthropicProvider implements AIProvider {
         }),
         signal: AbortSignal.timeout(10000),
       });
-      return response.ok;
+
+      if (!response.ok) {
+        return {
+          success: false,
+          models: [],
+          message: `连接失败 (${response.status})`,
+        };
+      }
+
+      return {
+        success: true,
+        models: getAnthropicFallbackModels(),
+        message: '连接成功，可从列表选择 Claude 模型',
+      };
     } catch {
-      return false;
+      return {
+        success: false,
+        models: [],
+        message: '连接失败，请检查 API Key 和网络',
+      };
     }
   }
 

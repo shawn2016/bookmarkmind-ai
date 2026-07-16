@@ -7,6 +7,10 @@ import type { AIProvider } from './provider';
 import { parseSSEStream } from './stream';
 import { buildClassifyPrompt } from './prompt';
 import { normalizeApiBaseUrl } from '@shared/utils/api-url';
+import {
+  parseOpenAIModelsPayload,
+  type ConnectionTestResult,
+} from './models';
 
 export class CustomProvider implements AIProvider {
   private readonly config: ModelConfig;
@@ -128,21 +132,42 @@ export class CustomProvider implements AIProvider {
 
   // ---- testConnection ----
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<ConnectionTestResult> {
     try {
       const headers: Record<string, string> = {};
       if (this.config.apiKey) {
         headers['Authorization'] = `Bearer ${this.config.apiKey}`;
       }
 
-      // Try the models endpoint first (works for most OpenAI-compatible APIs)
       const response = await fetch(`${this.baseUrl}/models`, {
         headers,
         signal: AbortSignal.timeout(10000),
       });
-      return response.ok;
+
+      if (!response.ok) {
+        return {
+          success: false,
+          models: [],
+          message: `连接失败 (${response.status})`,
+        };
+      }
+
+      const payload = await response.json();
+      const models = parseOpenAIModelsPayload(payload);
+      return {
+        success: true,
+        models,
+        message:
+          models.length > 0
+            ? `连接成功，发现 ${models.length} 个可用模型`
+            : '连接成功，但未获取到模型列表，请手动输入模型名',
+      };
     } catch {
-      return false;
+      return {
+        success: false,
+        models: [],
+        message: '连接失败，请检查 Base URL 和网络',
+      };
     }
   }
 

@@ -15,6 +15,7 @@ import {
 import { useOptionsStore } from '@options/store/optionsStore';
 import type { BallSide, ActionBarMode, ClickBehavior } from '@shared/types';
 import { BALL_SIZE_MIN, BALL_SIZE_MAX } from '@shared/utils/ball-size';
+import { formatSiteRuleLabel } from '@shared/utils/url-match';
 import {
   SectionCard,
   SubSection,
@@ -72,7 +73,7 @@ const UrlRuleList: React.FC<{
             }}
           >
             <Globe size={14} strokeWidth={2} style={{ opacity: 0.5 }} />
-            暂无规则 — 在所有网站上都会显示悬浮球
+            暂无永久隐藏记录 — 悬浮球会在所有网站上显示
           </div>
         ) : (
           rules.map((rule, index) => (
@@ -109,34 +110,37 @@ const UrlRuleList: React.FC<{
               >
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <input
-                type="text"
-                value={rule}
-                onChange={(e) => handleRuleChange(index, e.target.value)}
-                placeholder="*://*.example.com/*"
-                className="flex-1 rounded-bm-sm outline-none"
-                style={{
-                  fontSize: 'var(--bm-text-sm)',
-                  fontFamily: 'var(--bm-font-mono)',
-                  padding: '5px 10px',
-                  border: '1px solid transparent',
-                  background: 'transparent',
-                  color: 'var(--bm-text-primary)',
-                  letterSpacing: '0.02em',
-                  transition: 'all var(--bm-duration-fast) var(--bm-ease-default)',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--bm-border-accent)';
-                  e.currentTarget.style.background = 'var(--bm-bg-input)';
-                  e.currentTarget.style.boxShadow = 'var(--bm-shadow-focus)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'transparent';
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-                aria-label={`规则 ${index + 1}`}
-              />
+              <div className="flex-1 min-w-0">
+                <div
+                  style={{
+                    fontSize: 'var(--bm-text-sm)',
+                    fontWeight: 500,
+                    color: 'var(--bm-text-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatSiteRuleLabel(rule) || '未命名站点'}
+                </div>
+                <input
+                  type="text"
+                  value={rule}
+                  onChange={(e) => handleRuleChange(index, e.target.value)}
+                  placeholder="*://*.example.com/*"
+                  className="w-full rounded-bm-sm outline-none"
+                  style={{
+                    fontSize: 'var(--bm-text-xs)',
+                    fontFamily: 'var(--bm-font-mono)',
+                    padding: '3px 0',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--bm-text-muted)',
+                    letterSpacing: '0.02em',
+                  }}
+                  aria-label={`规则 ${index + 1}`}
+                />
+              </div>
               <button
                 onClick={() => handleDeleteRule(index)}
                 className="rounded-bm-sm outline-none flex items-center justify-center flex-shrink-0"
@@ -157,8 +161,8 @@ const UrlRuleList: React.FC<{
                   e.currentTarget.style.color = 'var(--bm-text-muted)';
                   e.currentTarget.style.background = 'transparent';
                 }}
-                title="删除此规则"
-                aria-label={`删除规则 ${index + 1}`}
+                title="恢复显示（删除此记录）"
+                aria-label={`恢复 ${formatSiteRuleLabel(rule)} 显示`}
               >
                 <Plus size={14} strokeWidth={2} style={{ transform: 'rotate(45deg)' }} />
               </button>
@@ -190,7 +194,7 @@ const UrlRuleList: React.FC<{
         }}
       >
         <Plus size={14} strokeWidth={2.4} />
-        <span>添加规则</span>
+        <span>手动添加网站</span>
       </button>
 
       <p
@@ -208,7 +212,7 @@ const UrlRuleList: React.FC<{
         }}
       >
         <CircleDot size={11} strokeWidth={2.4} style={{ marginTop: '3px', flexShrink: 0, opacity: 0.6 }} />
-        支持 Chrome URL 匹配模式（match pattern），例如
+        在网页上选择「在此网站永久隐藏」会自动记录在此。删除记录即可恢复显示。支持
         <code
           style={{
             fontFamily: 'var(--bm-font-mono)',
@@ -219,9 +223,9 @@ const UrlRuleList: React.FC<{
             color: 'var(--bm-text-primary)',
           }}
         >
-          *://*.alipay.com/*
+          *://*.example.com/*
         </code>
-        — 在匹配的网站上悬浮球不会显示
+        等 Chrome URL 匹配模式
       </p>
     </div>
   );
@@ -350,8 +354,12 @@ const BallConfigSection: React.FC = () => {
         />
       </SubSection>
 
-      {/* 网站规则 */}
-      <SubSection icon={<Globe size={15} strokeWidth={2.2} />} title="网站规则" caption={`${ball.disabledSites.length} 条`}>
+      {/* 永久隐藏 */}
+      <SubSection
+        icon={<Globe size={15} strokeWidth={2.2} />}
+        title="永久隐藏的网站"
+        caption={`${ball.disabledSites.length} 个`}
+      >
         <UrlRuleList
           rules={ball.disabledSites}
           onChange={(rules) => setBallConfig({ disabledSites: rules })}

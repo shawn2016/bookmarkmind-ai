@@ -103,8 +103,6 @@ export interface ContentStore {
 
   // ---- Actions ----
   setBallState: (s: 'collapsed' | 'hover' | 'expanded') => void;
-  ballHoverEnter: () => void;
-  ballHoverLeave: () => void;
   setBallConfig: (c: BallConfig) => void;
   setBallSessionHidden: (v: boolean) => void;
   setBallShrunk: (v: boolean) => void;
@@ -147,10 +145,6 @@ export interface ContentStore {
 
 const defaultBallConfig: BallConfig = DEFAULT_CONFIG.ball;
 const defaultAppSettings: AppSettings = DEFAULT_CONFIG.app;
-
-let ballHoverLeaveTimer: ReturnType<typeof setTimeout> | null = null;
-let ballHoverRefCount = 0;
-const BALL_HOVER_LEAVE_DELAY = 1600;
 
 export const useContentStore = create<ContentStore>((set, get) => ({
   // Ball state
@@ -218,30 +212,6 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   // ---- Actions ----
 
   setBallState: (s) => set({ ballState: s }),
-
-  ballHoverEnter: () => {
-    ballHoverRefCount += 1;
-    if (ballHoverLeaveTimer) {
-      clearTimeout(ballHoverLeaveTimer);
-      ballHoverLeaveTimer = null;
-    }
-    set({ ballState: 'hover' });
-  },
-
-  ballHoverLeave: () => {
-    ballHoverRefCount = Math.max(0, ballHoverRefCount - 1);
-    if (ballHoverRefCount > 0) return;
-
-    if (ballHoverLeaveTimer) clearTimeout(ballHoverLeaveTimer);
-    ballHoverLeaveTimer = setTimeout(() => {
-      if (ballHoverRefCount > 0) return;
-      const state = get();
-      if (!state.ballDragging && !state.ballClosePanelVisible) {
-        set({ ballState: 'collapsed' });
-      }
-      ballHoverLeaveTimer = null;
-    }, BALL_HOVER_LEAVE_DELAY);
-  },
 
   setBallConfig: (c) =>
     set({

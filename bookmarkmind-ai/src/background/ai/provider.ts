@@ -3,6 +3,7 @@
 // ============================================================
 import type { ModelConfig, ClassifyResult } from '@shared/types';
 import { resolveModelConfig } from '@shared/utils/api-url';
+import type { ConnectionTestResult } from './models';
 
 // Static imports — avoids Vite's dynamic-import preload polyfill which
 // uses `document` (not available in the Service Worker context).
@@ -39,9 +40,9 @@ export interface AIProvider {
   ): Promise<ClassifyResult>;
 
   /**
-   * Test that the API credentials and endpoint are valid.
+   * Test credentials and fetch available models when supported.
    */
-  testConnection(): Promise<boolean>;
+  testConnection(): Promise<ConnectionTestResult>;
 }
 
 // ---- Factory ----

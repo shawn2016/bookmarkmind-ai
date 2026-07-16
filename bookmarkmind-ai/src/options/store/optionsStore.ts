@@ -23,6 +23,7 @@ export type SectionKey =
 export interface TestResult {
   success: boolean;
   message: string;
+  models?: string[];
 }
 
 export interface OptionsStore {
@@ -49,8 +50,11 @@ export interface OptionsStore {
   /** 连接测试状态 */
   testing: boolean;
   testResult: TestResult | null;
+  /** 测试连接后获取的可用模型列表 */
+  availableModels: string[];
   setTesting: (v: boolean) => void;
   setTestResult: (r: TestResult | null) => void;
+  setAvailableModels: (models: string[]) => void;
   /** 发送连接测试消息到 background */
   testConnection: () => Promise<void>;
   /** 保存状态 */
@@ -65,6 +69,7 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
   config: DEFAULT_CONFIG,
   testing: false,
   testResult: null,
+  availableModels: [],
   isSaving: false,
   lastSavedAt: null,
 
@@ -82,6 +87,8 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
 
   setModelConfig: (partial) => {
     set((state) => {
+      const providerChanged =
+        partial.provider != null && partial.provider !== state.config.model.provider;
       const newConfig = {
         ...state.config,
         model: { ...state.config.model, ...partial },
@@ -91,7 +98,12 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
         .set({ [STORAGE_KEYS.CONFIG]: newConfig })
         .then(() => set({ isSaving: false, lastSavedAt: Date.now() }))
         .catch(() => set({ isSaving: false }));
-      return { config: newConfig };
+      return {
+        config: newConfig,
+        ...(providerChanged
+          ? { availableModels: [], testResult: null }
+          : {}),
+      };
     });
   },
 
@@ -187,6 +199,7 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
 
   setTesting: (v) => set({ testing: v }),
   setTestResult: (r) => set({ testResult: r }),
+  setAvailableModels: (models) => set({ availableModels: models }),
   setSavingState: (saving) => set({ isSaving: saving }),
   setLastSavedAt: (t) => set({ lastSavedAt: t }),
 
@@ -210,16 +223,25 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
       return;
     }
 
-    set({ testing: true, testResult: null });
+    set({ testing: true, testResult: null, availableModels: [] });
 
     try {
       // Race against a 15-second timeout to prevent UI hang
-      const timeoutPromise = new Promise<{ success: false; message: string }>(
-        (resolve) =>
-          setTimeout(
-            () => resolve({ success: false, message: '连接超时，请检查网络或 API 地址' }),
-            15000,
-          ),
+      const timeoutPromise = new Promise<{
+        success: false;
+        message: string;
+        models?: string[];
+        error?: string;
+      }>((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              success: false,
+              message: '连接超时，请检查网络或 API 地址',
+              models: [],
+            }),
+          15000,
+        ),
       );
 
       const sendPromise = chrome.runtime.sendMessage({
@@ -230,18 +252,32 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
           baseUrl: model.baseUrl,
           model: model.model,
         },
-      });
+      }) as Promise<{
+        success?: boolean;
+        message?: string;
+        models?: string[];
+        error?: string;
+      }>;
 
       const response = await Promise.race([sendPromise, timeoutPromise]);
+      const models = Array.isArray(response?.models)
+        ? response.models.filter((m): m is string => typeof m === 'string' && m.length > 0)
+        : [];
 
       if (response?.success) {
         set({
           testing: false,
-          testResult: { success: true, message: response.message ?? '连接成功' },
+          availableModels: models,
+          testResult: {
+            success: true,
+            message: response.message ?? '连接成功',
+            models,
+          },
         });
       } else if (response?.error) {
         set({
           testing: false,
+          availableModels: [],
           testResult: {
             success: false,
             message: `连接失败: ${response.error}`,
@@ -250,6 +286,7 @@ export const useOptionsStore = create<OptionsStore>((set, get) => ({
       } else {
         set({
           testing: false,
+          availableModels: [],
           testResult: {
             success: false,
             message: response?.message ?? '连接失败，请检查配置',

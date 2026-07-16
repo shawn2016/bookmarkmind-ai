@@ -7,8 +7,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { BookOpen, Github, ExternalLink, Shield, FileText } from 'lucide-react';
 import { SectionCard, SubSection, Callout } from '../primitives';
-
-const GITHUB_URL = 'https://github.com/bookmarkmind-ai';
+import { GITHUB_REPO_URL } from '@shared/constants/repo';
 
 /* Link Row — 在卡内的"资源"分区 */
 const LinkRow: React.FC<{
@@ -97,7 +96,7 @@ const AboutSection: React.FC = () => {
             智能分类书签，支持自然语言搜索，让您的书签库井井有条。
           </p>
           <a
-            href={GITHUB_URL}
+            href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -122,9 +121,9 @@ const AboutSection: React.FC = () => {
         caption="链接 · 仓库"
       >
         <div className="flex flex-col gap-bm-2">
-          <LinkRow icon={Github} label="GitHub 源码" href={GITHUB_URL} />
+          <LinkRow icon={Github} label="GitHub 源码" href={GITHUB_REPO_URL} />
           <LinkRow icon={ExternalLink} label="Chrome Web Store" href="https://chrome.google.com/webstore/detail/bookmarkmind-ai" />
-          <LinkRow icon={FileText} label="反馈与建议" href={`${GITHUB_URL}/issues`} />
+          <LinkRow icon={FileText} label="反馈与建议" href={`${GITHUB_REPO_URL}/issues`} />
         </div>
       </SubSection>
 

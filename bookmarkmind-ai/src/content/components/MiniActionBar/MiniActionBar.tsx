@@ -106,7 +106,6 @@ export const MiniActionBar: React.FC = () => {
   const ballLivePos = useContentStore(s => s.ballLivePos);
   const ballDragging = useContentStore(s => s.ballDragging);
   const ballState = useContentStore(s => s.ballState);
-  const { ballHoverEnter, ballHoverLeave } = useContentStore.getState();
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const BALL_SIZE = getEffectiveBallSize(ballConfig, ballShrunk);
@@ -124,14 +123,6 @@ export const MiniActionBar: React.FC = () => {
   const ballX = ballLivePos?.x ?? defaultX;
   const ballY = ballLivePos?.y ?? defaultY;
   const ballCenterX = ballX + BALL_SIZE / 2;
-
-  const onZoneEnter = useCallback(() => {
-    ballHoverEnter();
-  }, [ballHoverEnter]);
-
-  const onZoneLeave = useCallback(() => {
-    ballHoverLeave();
-  }, [ballHoverLeave]);
 
   const handleCloseClick = useCallback(() => {
     useContentStore.getState().setBallClosePanelVisible(true);
@@ -154,84 +145,47 @@ export const MiniActionBar: React.FC = () => {
   const closeTop = colTop + BTN_SIZE + GAP;
   const settingsTop = closeTop + BTN_SIZE + GAP;
 
-  // 统一悬停热区：覆盖球体、间隙、按钮、左侧标签区
-  const zoneStyle: React.CSSProperties = {
-    position: "fixed",
-    left: `${ballX - 130}px`,
-    top: `${ballY - 8}px`,
-    width: `${130 + BALL_SIZE + 16}px`,
-    height: `${BALL_SIZE + BTN_SIZE * 3 + GAP * 2 + 24}px`,
-    zIndex: "calc(var(--bm-z-base) + 1)",
-    pointerEvents: "auto",
-  };
-
   return (
-    <>
-      <div
-        style={zoneStyle}
-        onMouseEnter={onZoneEnter}
-        onMouseLeave={onZoneLeave}
-        data-testid="ball-hover-zone"
+    <div data-testid="mini-action-bar">
+      <ActionBtn
+        icon={<Maximize2 size={15} />}
+        label="展开面板"
+        btnLeft={colLeft}
+        btnTop={expandTop}
+        viewW={viewW}
+        hovered={hoveredKey === "expand"}
+        onHover={() => setHoveredKey("expand")}
+        onLeave={() => setHoveredKey(null)}
+        onClick={handleExpandClick}
+        testId="action-btn-expand"
+        highlight
       />
-      <div data-testid="mini-action-bar">
-        <ActionBtn
-          icon={<Maximize2 size={15} />}
-          label="展开面板"
-          btnLeft={colLeft}
-          btnTop={expandTop}
-          viewW={viewW}
-          hovered={hoveredKey === "expand"}
-          onHover={() => {
-            setHoveredKey("expand");
-            ballHoverEnter();
-          }}
-          onLeave={() => {
-            setHoveredKey(null);
-            ballHoverLeave();
-          }}
-          onClick={handleExpandClick}
-          testId="action-btn-expand"
-          highlight
-        />
-        <ActionBtn
-          icon={<X size={15} />}
-          label="关闭"
-          btnLeft={colLeft}
-          btnTop={closeTop}
-          viewW={viewW}
-          hovered={hoveredKey === "close"}
-          onHover={() => {
-            setHoveredKey("close");
-            ballHoverEnter();
-          }}
-          onLeave={() => {
-            setHoveredKey(null);
-            ballHoverLeave();
-          }}
-          onClick={handleCloseClick}
-          testId="action-btn-hide"
-        />
-        <ActionBtn
-          icon={<Settings size={15} />}
-          label="设置"
-          btnLeft={colLeft}
-          btnTop={settingsTop}
-          viewW={viewW}
-          hovered={hoveredKey === "settings"}
-          onHover={() => {
-            setHoveredKey("settings");
-            ballHoverEnter();
-          }}
-          onLeave={() => {
-            setHoveredKey(null);
-            ballHoverLeave();
-          }}
-          onClick={handleSettingsClick}
-          testId="action-btn-settings"
-          highlight
-        />
-      </div>
-    </>
+      <ActionBtn
+        icon={<X size={15} />}
+        label="关闭"
+        btnLeft={colLeft}
+        btnTop={closeTop}
+        viewW={viewW}
+        hovered={hoveredKey === "close"}
+        onHover={() => setHoveredKey("close")}
+        onLeave={() => setHoveredKey(null)}
+        onClick={handleCloseClick}
+        testId="action-btn-hide"
+      />
+      <ActionBtn
+        icon={<Settings size={15} />}
+        label="设置"
+        btnLeft={colLeft}
+        btnTop={settingsTop}
+        viewW={viewW}
+        hovered={hoveredKey === "settings"}
+        onHover={() => setHoveredKey("settings")}
+        onLeave={() => setHoveredKey(null)}
+        onClick={handleSettingsClick}
+        testId="action-btn-settings"
+        highlight
+      />
+    </div>
   );
 };
 

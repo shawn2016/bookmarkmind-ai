@@ -2,6 +2,8 @@
  * URL 通配符匹配 — 支持 Chrome URL 匹配模式
  * 支持格式: *://*.example.com/*  https://example.com/path  etc.
  */
+import type { BallConfig } from '@shared/types';
+
 export function matchUrlPattern(pattern: string, url: string): boolean {
   // 将通配符模式转为正则
   const regexStr = pattern
@@ -63,6 +65,23 @@ export function isFullscreen(): boolean {
 /** 检查是否在 iframe 中 */
 export function isInIframe(): boolean {
   return window !== window.top;
+}
+
+/** 从 URL 规则提取可读站点名 */
+export function formatSiteRuleLabel(pattern: string): string {
+  const m = pattern.match(/\*:\/\/(?:\*\.)?([^/*]+)/i);
+  if (m?.[1]) return m[1];
+  return pattern || '未知站点';
+}
+
+/** 当前页面是否应显示悬浮球 */
+export function shouldShowBall(config: BallConfig, url: string): boolean {
+  if (!config.enabled) return false;
+  const matched = matchAnyPattern(config.disabledSites, url);
+  if (config.whitelistMode) {
+    return matched;
+  }
+  return !matched;
 }
 
 /** 检查是否为编辑器类网站 */

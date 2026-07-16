@@ -75,17 +75,47 @@ export function useBookmarks() {
     [setFilteredBookmarks],
   );
 
+  const removeBookmark = useCallback(async (id: string): Promise<boolean> => {
+    const response = await safeSendMessage<{ success?: boolean; error?: string }>({
+      type: "BOOKMARK_REMOVE",
+      payload: { id },
+    });
+
+    if (!response?.success) {
+      return false;
+    }
+
+    const store = useContentStore.getState();
+    store.setBookmarks(store.bookmarks.filter((b) => b.id !== id));
+    store.setFilteredBookmarks(
+      store.filteredBookmarks.filter((b) => b.id !== id),
+    );
+    if (store.selectedIds.has(id)) {
+      const next = new Set(store.selectedIds);
+      next.delete(id);
+      useContentStore.setState({ selectedIds: next });
+    }
+    return true;
+  }, []);
+
   const batchDelete = useCallback(
     async (ids: string[]) => {
-      const response = await safeSendMessage({
+      const response = await safeSendMessage<{ success?: boolean }>({
         type: "BOOKMARK_BATCH_DELETE",
         payload: { ids },
       });
 
-      if (response) {
-        await loadBookmarks();
-        useContentStore.getState().clearSelected();
-        useContentStore.getState().pushToast({
+      if (response?.success) {
+        const store = useContentStore.getState();
+        const idSet = new Set(ids);
+        store.setBookmarks(store.bookmarks.filter((b) => !idSet.has(b.id)));
+        store.setFilteredBookmarks(
+          store.filteredBookmarks.filter((b) => !idSet.has(b.id)),
+        );
+        const nextSelected = new Set(store.selectedIds);
+        ids.forEach((id) => nextSelected.delete(id));
+        useContentStore.setState({ selectedIds: nextSelected });
+        store.pushToast({
           type: "success",
           message: `已删除 ${ids.length} 个书签`,
         });
@@ -96,7 +126,7 @@ export function useBookmarks() {
         });
       }
     },
-    [loadBookmarks],
+    [],
   );
 
   const batchMove = useCallback(
@@ -136,6 +166,7 @@ export function useBookmarks() {
     loadBookmarks,
     searchBookmarks,
     filterByCategory,
+    removeBookmark,
     batchDelete,
     batchMove,
     checkBookmarked,

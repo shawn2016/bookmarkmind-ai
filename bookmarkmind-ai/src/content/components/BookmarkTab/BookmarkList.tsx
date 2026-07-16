@@ -45,7 +45,12 @@ export const BookmarkList: React.FC = () => {
     getScrollElement: () => parentRef.current,
     estimateSize: () => ITEM_HEIGHT,
     overscan: 5,
+    getItemKey: (index) => filteredBookmarks[index]?.id ?? index,
   });
+
+  useEffect(() => {
+    rowVirtualizer.measure();
+  }, [filteredBookmarks, rowVirtualizer]);
 
   // Determine empty state type
   const hasAnyBookmarks = bookmarks.length > 0;

@@ -20,7 +20,7 @@ export const FloatingBall: React.FC = () => {
   const ballDragging = useContentStore(s => s.ballDragging);
   const bookmarks = useContentStore(s => s.bookmarks);
   const panelVisible = useContentStore(s => s.panelVisible);
-  const { ballHoverEnter, ballHoverLeave } = useContentStore.getState();
+  const { setBallState } = useContentStore.getState();
 
   const { onPointerDown, isDragging } = useBallDrag();
   const ballRef = useRef<HTMLDivElement>(null);
@@ -74,15 +74,15 @@ export const FloatingBall: React.FC = () => {
   }, []);
 
   const handleMouseEnter = useCallback(() => {
-    ballHoverEnter();
+    if (!ballDragging) {
+      setBallState('hover');
+    }
     setShowTooltip(true);
-  }, [ballHoverEnter]);
+  }, [setBallState, ballDragging]);
 
   const handleMouseLeave = useCallback(() => {
-    if (ballDragging) return;
     setShowTooltip(false);
-    ballHoverLeave();
-  }, [ballHoverLeave, ballDragging]);
+  }, []);
 
   const { loadBookmarks } = useBookmarks();
 

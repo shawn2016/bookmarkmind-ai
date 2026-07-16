@@ -11,7 +11,7 @@ import {
   truncateUrl,
 } from "@shared/utils/format";
 import { useContentStore } from "@content/store/contentStore";
-import { safeSendMessage } from "@shared/utils/chrome-api";
+import { useBookmarks } from "@content/hooks/useBookmarks";
 import { CatalogStamp } from "@shared/components/CatalogStamp";
 
 interface BookmarkItemProps {
@@ -28,6 +28,7 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
   const batchMode = useContentStore(s => s.batchMode);
   const selectedIds = useContentStore(s => s.selectedIds);
   const toggleSelected = useContentStore(s => s.toggleSelected);
+  const { removeBookmark } = useBookmarks();
   const [isHovered, setIsHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const rowRef = useRef<HTMLDivElement>(null);
@@ -59,11 +60,8 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
         content: `确定删除「${bookmark.title}」？`,
         confirmVariant: "danger",
         onConfirm: async () => {
-          const response = await safeSendMessage({
-            type: "BOOKMARK_REMOVE",
-            payload: { id: bookmark.id },
-          });
-          if (response) {
+          const ok = await removeBookmark(bookmark.id);
+          if (ok) {
             store.pushToast({ type: "success", message: "已删除" });
           } else {
             store.pushToast({ type: "error", message: "删除失败" });
@@ -72,7 +70,7 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
         },
       });
     },
-    [bookmark],
+    [bookmark, removeBookmark],
   );
 
   const handleRowClick = useCallback(

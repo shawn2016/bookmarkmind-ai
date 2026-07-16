@@ -9,6 +9,7 @@ import { useOptionsStore } from '@options/store/optionsStore';
 import { getMinimaxBaseUrlHint } from '@shared/utils/api-url';
 import ProviderSelector from '@options/components/forms/ProviderSelector';
 import ApiKeyInput from '@options/components/forms/ApiKeyInput';
+import ModelSelector from '@options/components/forms/ModelSelector';
 import type { AIProvider } from '@shared/types';
 import {
   SectionCard,
@@ -122,7 +123,7 @@ const MODEL_PLACEHOLDER: Record<AIProvider, string> = {
 const ModelConfigSection: React.FC = () => {
   const { config, setModelConfig } = useOptionsStore();
   const { model } = config;
-  const { testing, testResult } = useOptionsStore();
+  const { testing, testResult, availableModels } = useOptionsStore();
 
   return (
     <SectionCard
@@ -187,11 +188,19 @@ const ModelConfigSection: React.FC = () => {
           )}
         </Field>
 
-        <Field label="模型名称" description="使用的具体模型 ID">
-          <TextInput
+        <Field
+          label="模型名称"
+          description={
+            availableModels.length > 0
+              ? '测试连接成功后，可从下拉列表选择模型'
+              : '使用的具体模型 ID，测试连接后可自动获取列表'
+          }
+        >
+          <ModelSelector
             value={model.model}
-            onChange={(v) => setModelConfig({ model: v })}
+            models={availableModels}
             placeholder={MODEL_PLACEHOLDER[model.provider]}
+            onChange={(v) => setModelConfig({ model: v })}
           />
         </Field>
 

@@ -2,6 +2,8 @@
 
 > AI 驱动的 Chrome 书签管理扩展 — 收藏即整理，搜索即对话
 
+**GitHub：** https://github.com/shawn2016/bookmarkmind-ai
+
 Chrome Extension MV3 + React 18 + TypeScript + Tailwind CSS + Zustand
 
 ## 快速开始
@@ -138,4 +140,4 @@ AI API 调用在 Service Worker 中执行（不受 CSP 限制），通过 `chrom
 
 ## 许可证
 
-MIT
+MIT — 源码托管于 [shawn2016/bookmarkmind-ai](https://github.com/shawn2016/bookmarkmind-ai)
