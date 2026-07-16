@@ -14,6 +14,7 @@ import type {
 } from '@shared/types';
 import { DEFAULT_CONFIG, DEFAULT_VIEW_PREFS } from '@shared/types';
 import { applyAppSettings, watchSystemTheme } from '@shared/utils/theme';
+import { hasApiCredentials, isAiReady } from '@shared/utils/ai-config';
 
 // ---- Toast ----
 export interface ToastItem {
@@ -82,6 +83,7 @@ export interface ContentStore {
   messages: ChatMessage[];
   isStreaming: boolean;
   aiConfigured: boolean;
+  hasAiCredentials: boolean;
 
   // Bookmark state
   bookmarks: BookmarkItem[];
@@ -122,6 +124,7 @@ export interface ContentStore {
   updateMessage: (id: string, partial: Partial<ChatMessage>) => void;
   setStreaming: (s: boolean) => void;
   setAiConfigured: (v: boolean) => void;
+  setHasAiCredentials: (v: boolean) => void;
   setBookmarks: (b: BookmarkItem[]) => void;
   setFilteredBookmarks: (b: BookmarkItem[]) => void;
   toggleSelected: (id: string) => void;
@@ -175,6 +178,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   messages: [],
   isStreaming: false,
   aiConfigured: false,
+  hasAiCredentials: false,
 
   // Bookmark state
   bookmarks: [],
@@ -279,6 +283,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   setStreaming: (s) => set({ isStreaming: s }),
 
   setAiConfigured: (v) => set({ aiConfigured: v }),
+  setHasAiCredentials: (v) => set({ hasAiCredentials: v }),
 
   setBookmarks: (b) => set({ bookmarks: b }),
 
@@ -430,16 +435,10 @@ export function syncConfigToStore(rawConfig: ExtensionConfig): void {
   const store = useContentStore.getState();
   store.setBallConfig(config.ball);
   store.setAppSettings(config.app);
-  store.setAiConfigured(isModelConfigured(config));
+  store.setAiConfigured(isAiReady(config));
+  store.setHasAiCredentials(hasApiCredentials(config.model));
 
   applyThemeToContent(config.app);
-}
-
-function isModelConfigured(config: ExtensionConfig): boolean {
-  if (config.model.provider === 'custom') {
-    return !!config.model.baseUrl?.trim();
-  }
-  return !!config.model.apiKey?.trim();
 }
 
 function applyThemeToContent(app: ExtensionConfig['app']): void {

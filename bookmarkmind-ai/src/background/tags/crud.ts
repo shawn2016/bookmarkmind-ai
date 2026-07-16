@@ -164,6 +164,15 @@ export async function getBookmarkTags(bookmarkId: string): Promise<Tag[]> {
   return tags.filter((t) => tagIds.includes(t.id));
 }
 
+export async function getBookmarkTagMap(): Promise<Record<string, string[]>> {
+  const map = await loadBookmarkTags();
+  const result: Record<string, string[]> = {};
+  for (const [bookmarkId, tagIds] of map) {
+    result[bookmarkId] = tagIds;
+  }
+  return result;
+}
+
 export async function getBookmarkTagIds(bookmarkId: string): Promise<string[]> {
   const map = await loadBookmarkTags();
   return map.get(bookmarkId) ?? [];

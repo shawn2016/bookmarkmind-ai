@@ -1,10 +1,13 @@
 // ============================================================
 // TimelineTab — 时间轴主视图容器
 // ============================================================
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { BookmarkItem } from '@shared/types';
 import { TimelineGroup } from './TimelineGroup';
 import { TimelineFilters } from './TimelineFilters';
+import { BookmarkDetail } from '@content/components/BookmarkTab/BookmarkDetail';
 import { useTimeline } from '@content/hooks/useTimeline';
+import { useTagStore } from '@content/store/tagStore';
 import { safeSendMessage } from '@shared/utils/chrome-api';
 
 export const TimelineTab: React.FC = () => {
@@ -18,14 +21,22 @@ export const TimelineTab: React.FC = () => {
     setSelectedCategories,
   } = useTimeline();
 
+  const bookmarkTagMap = useTagStore((s) => s.bookmarkTagMap);
+  const loadTags = useTagStore((s) => s.loadTags);
+  const loadBookmarkTagMap = useTagStore((s) => s.loadBookmarkTagMap);
+
   const [resurfaceIds, setResurfaceIds] = useState<Set<string>>(new Set());
   const [noteIds, setNoteIds] = useState<Set<string>>(new Set());
   const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
+  const [detailBookmark, setDetailBookmark] = useState<BookmarkItem | null>(
+    null,
+  );
 
-  // Load badge data on mount
   useEffect(() => {
     loadMetadata();
-  }, []);
+    void loadTags();
+    void loadBookmarkTagMap();
+  }, [loadTags, loadBookmarkTagMap]);
 
   const loadMetadata = async () => {
     try {
@@ -35,18 +46,23 @@ export const TimelineTab: React.FC = () => {
         safeSendMessage({ type: 'HIGHLIGHT_LIST_IDS' }),
       ]);
 
-      // Resurface pushed bookmark IDs
-      const records = (resurfaceResp as Record<string, unknown>)?.records as Array<{ bookmarkId: string }> ?? [];
+      const records =
+        ((resurfaceResp as Record<string, unknown>)?.records as Array<{
+          bookmarkId: string;
+        }>) ?? [];
       setResurfaceIds(new Set(records.map((r) => r.bookmarkId)));
 
-      // Note bookmark IDs
-      const nIds = (noteResp as Record<string, unknown>)?.noteIds as string[] ?? [];
+      const nIds =
+        ((noteResp as Record<string, unknown>)?.noteIds as string[]) ?? [];
       setNoteIds(new Set(nIds));
 
-      // Highlight bookmark IDs
-      const hIds = (highlightResp as Record<string, unknown>)?.highlightIds as string[] ?? [];
+      const hIds =
+        ((highlightResp as Record<string, unknown>)?.highlightIds as string[]) ??
+        [];
       setHighlightIds(new Set(hIds));
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   };
 
   const handleCategoryToggle = (cat: string) => {
@@ -58,7 +74,11 @@ export const TimelineTab: React.FC = () => {
     });
   };
 
-  // Loading state
+  const handleCloseDetail = useCallback(() => {
+    setDetailBookmark(null);
+    void loadBookmarkTagMap();
+  }, [loadBookmarkTagMap]);
+
   if (loading) {
     return (
       <div style={centerStyle}>
@@ -69,7 +89,6 @@ export const TimelineTab: React.FC = () => {
     );
   }
 
-  // Empty state
   if (groups.length === 0) {
     return (
       <div style={containerStyle}>
@@ -90,34 +109,42 @@ export const TimelineTab: React.FC = () => {
   }
 
   return (
-    <div style={containerStyle}>
-      <TimelineFilters
-        searchText={searchText}
-        onSearchChange={setSearchText}
-        categories={categories}
-        selectedCategories={selectedCategories}
-        onCategoryToggle={handleCategoryToggle}
-      />
+    <>
+      <div style={containerStyle}>
+        <TimelineFilters
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onCategoryToggle={handleCategoryToggle}
+        />
 
-      {/* Timeline groups */}
-      <div style={scrollStyle}>
-        {groups.map((group) => (
-          <TimelineGroup
-            key={group.key}
-            label={group.label}
-            bookmarks={group.bookmarks}
-            count={group.count}
-            resurfaceBookmarkIds={resurfaceIds}
-            bookmarkNotes={noteIds}
-            bookmarkHighlights={highlightIds}
-          />
-        ))}
+        <div style={scrollStyle}>
+          {groups.map((group) => (
+            <TimelineGroup
+              key={group.key}
+              label={group.label}
+              bookmarks={group.bookmarks}
+              count={group.count}
+              resurfaceBookmarkIds={resurfaceIds}
+              bookmarkNotes={noteIds}
+              bookmarkHighlights={highlightIds}
+              bookmarkTagMap={bookmarkTagMap}
+              onOpenDetail={setDetailBookmark}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {detailBookmark && (
+        <BookmarkDetail
+          bookmark={detailBookmark}
+          onClose={handleCloseDetail}
+        />
+      )}
+    </>
   );
 };
-
-// ---- Styles ----
 
 const containerStyle: React.CSSProperties = {
   display: 'flex',
@@ -139,3 +166,5 @@ const centerStyle: React.CSSProperties = {
   height: '100%',
   gap: 'var(--bm-space-4)',
 };
+
+export default TimelineTab;

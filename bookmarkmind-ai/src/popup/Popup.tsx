@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { BookOpen, Bookmark, Search, Settings, Globe } from 'lucide-react';
+import { getBookmarkCreateToastMessage } from '@shared/utils/bookmark-toast';
 
 interface TabInfo {
   title: string;
@@ -15,6 +16,8 @@ const Popup: React.FC = () => {
   const [tabInfo, setTabInfo] = useState<TabInfo | null>(null);
   const [bookmarking, setBookmarking] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<'success' | 'error' | 'warning'>('success');
 
   /** Load current tab info on mount */
   useEffect(() => {
@@ -47,14 +50,36 @@ const Popup: React.FC = () => {
   const handleBookmark = useCallback(async () => {
     if (!tabInfo || bookmarking) return;
     setBookmarking(true);
+    setStatusMessage(null);
     try {
-      await chrome.runtime.sendMessage({
+      const response = await chrome.runtime.sendMessage({
         type: 'BOOKMARK_CREATE',
         payload: { url: tabInfo.url, title: tabInfo.title },
-      });
-      setBookmarked(true);
+      }) as {
+        success?: boolean;
+        error?: string;
+        classified?: boolean;
+        category?: string;
+      } | undefined;
+
+      if (response?.success) {
+        setBookmarked(true);
+        const toast = getBookmarkCreateToastMessage(response, {
+          quickLabel: '已收藏当前页面',
+        });
+        setStatusType(toast.type);
+        setStatusMessage(toast.message);
+      } else {
+        const toast = getBookmarkCreateToastMessage({
+          success: false,
+          error: response?.error,
+        });
+        setStatusType(toast.type);
+        setStatusMessage(toast.message);
+      }
     } catch {
-      // Ignore
+      setStatusType('error');
+      setStatusMessage('收藏失败，请重试');
     } finally {
       setBookmarking(false);
     }
@@ -214,6 +239,24 @@ const Popup: React.FC = () => {
           <span>AI 搜索</span>
         </button>
       </div>
+
+      {statusMessage && (
+        <p
+          style={{
+            fontSize: 'var(--bm-text-xs)',
+            color:
+              statusType === 'success'
+                ? 'var(--bm-success-500)'
+                : statusType === 'warning'
+                  ? 'var(--bm-warning-500, var(--bm-gray-600))'
+                  : 'var(--bm-error-500)',
+            marginBottom: '12px',
+            textAlign: 'center',
+          }}
+        >
+          {statusMessage}
+        </p>
+      )}
 
       {/* Settings link */}
       <button

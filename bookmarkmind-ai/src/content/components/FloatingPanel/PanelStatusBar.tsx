@@ -11,6 +11,7 @@ import { useBookmarks } from '@content/hooks/useBookmarks';
 export const PanelStatusBar: React.FC = () => {
   const bookmarks = useContentStore((s) => s.bookmarks);
   const aiConfigured = useContentStore((s) => s.aiConfigured);
+  const hasAiCredentials = useContentStore((s) => s.hasAiCredentials);
   const { loadBookmarks } = useBookmarks();
   const [isCurrentBookmarked, setIsCurrentBookmarked] = useState(false);
 
@@ -59,29 +60,7 @@ export const PanelStatusBar: React.FC = () => {
       return;
     }
 
-    const response = await safeSendMessage<{
-      success?: boolean;
-      classified?: boolean;
-      category?: string;
-    }>({
-      type: 'BOOKMARK_CREATE',
-      payload: { url, title },
-    });
-
-    if (response?.success) {
-      const msg =
-        response.classified && response.category
-          ? `已收藏并归入「${response.category}」`
-          : '已收藏当前页面';
-      useContentStore.getState().pushToast({ type: 'success', message: msg });
-      setIsCurrentBookmarked(true);
-      await loadBookmarks();
-    } else {
-      useContentStore.getState().pushToast({
-        type: 'error',
-        message: '收藏失败',
-      });
-    }
+    useContentStore.getState().showBookmarkSaveModal({ url, title });
   }, [isCurrentBookmarked, loadBookmarks]);
 
   const handleSettingsClick = useCallback(() => {
@@ -206,7 +185,7 @@ export const PanelStatusBar: React.FC = () => {
         </span>
         <span style={statItemStyle}>
           <Sparkles size={11} color={aiConfigured ? 'var(--bm-success-500)' : 'var(--bm-gray-400)'} />
-          {aiConfigured ? 'AI 已就绪' : 'AI 未配置'}
+          {aiConfigured ? 'AI 已就绪' : hasAiCredentials ? '请选择模型' : 'AI 未配置'}
         </span>
         {stats.todayAdded > 0 && (
           <span

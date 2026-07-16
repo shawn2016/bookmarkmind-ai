@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Trash2, X, Sparkles, FolderInput } from "lucide-react";
+import { Trash2, X, Sparkles, FolderInput, CheckSquare } from "lucide-react";
 import { useContentStore } from "@content/store/contentStore";
 import { useBookmarks } from "@content/hooks/useBookmarks";
 import { safeSendMessage } from "@shared/utils/chrome-api";
@@ -11,10 +11,14 @@ import { safeSendMessage } from "@shared/utils/chrome-api";
 export const BatchActionBar: React.FC = () => {
   const batchMode = useContentStore(s => s.batchMode);
   const selectedIds = useContentStore(s => s.selectedIds);
+  const filteredBookmarks = useContentStore(s => s.filteredBookmarks);
   const setBatchMode = useContentStore(s => s.setBatchMode);
   const clearSelected = useContentStore(s => s.clearSelected);
+  const selectAll = useContentStore(s => s.selectAll);
   const { batchDelete, batchMove } = useBookmarks();
   const count = selectedIds.size;
+  const totalVisible = filteredBookmarks.length;
+  const allSelected = totalVisible > 0 && count === totalVisible;
   const [classifying, setClassifying] = useState(false);
   const [folders, setFolders] = useState<{ id: string; title: string }[]>([]);
   const [moveFolderId, setMoveFolderId] = useState("");
@@ -84,19 +88,30 @@ export const BatchActionBar: React.FC = () => {
     setBatchMode(false);
   }, [clearSelected, setBatchMode]);
 
+  const handleSelectAll = useCallback(() => {
+    selectAll();
+  }, [selectAll]);
+
+  const handleClearSelection = useCallback(() => {
+    clearSelected();
+  }, [clearSelected]);
+
   if (!batchMode) return null;
 
+  const hasSelection = count > 0;
+
   const barStyle: React.CSSProperties = {
-    backgroundColor: "var(--bm-gray-800)",
-    color: "white",
+    background: hasSelection
+      ? "linear-gradient(135deg, var(--bm-primary-50) 0%, var(--bm-gray-0) 100%)"
+      : "var(--bm-primary-50)",
+    color: hasSelection ? "var(--bm-gray-700)" : "var(--bm-primary-700)",
     padding: "var(--bm-space-2) var(--bm-space-3)",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "var(--bm-space-2)",
-    borderRadius: count > 0 ? "var(--bm-radius-lg) var(--bm-radius-lg) 0 0" : 0,
-    animation: count > 0 ? "bm-slide-up var(--bm-duration-normal) var(--bm-ease-spring)" : undefined,
-    minHeight: "44px",
+    borderBottom: "1px solid var(--bm-primary-100)",
+    minHeight: "40px",
     flexWrap: "wrap",
   };
 
@@ -105,7 +120,7 @@ export const BatchActionBar: React.FC = () => {
     alignItems: "center",
     gap: "var(--bm-space-2)",
     fontSize: "var(--bm-text-sm)",
-    fontWeight: 500,
+    fontWeight: hasSelection ? 600 : 500,
   };
 
   const rightStyle: React.CSSProperties = {
@@ -142,16 +157,24 @@ export const BatchActionBar: React.FC = () => {
 
   const cancelBtnStyle: React.CSSProperties = {
     ...btnBaseStyle,
-    backgroundColor: "transparent",
-    color: "rgba(255,255,255,0.7)",
+    backgroundColor: "var(--bm-gray-0)",
+    color: "var(--bm-gray-600)",
+    border: "1px solid var(--bm-gray-200)",
+  };
+
+  const ghostBtnStyle: React.CSSProperties = {
+    ...btnBaseStyle,
+    backgroundColor: "var(--bm-gray-0)",
+    color: "var(--bm-primary-600)",
+    border: "1px solid var(--bm-primary-200)",
   };
 
   const selectStyle: React.CSSProperties = {
     padding: "5px 8px",
     borderRadius: "var(--bm-radius-sm)",
-    border: "1px solid rgba(255,255,255,0.2)",
-    background: "rgba(255,255,255,0.1)",
-    color: "white",
+    border: "1px solid var(--bm-gray-200)",
+    background: "var(--bm-gray-0)",
+    color: "var(--bm-gray-700)",
     fontSize: "var(--bm-text-xs)",
     maxWidth: "120px",
   };
@@ -159,51 +182,65 @@ export const BatchActionBar: React.FC = () => {
   return (
     <div style={barStyle}>
       <div style={leftStyle}>
-        {count > 0 ? `已选 ${count} 项` : "多选模式：点击书签进行选择"}
+        {hasSelection
+          ? `已选 ${count}${totalVisible > 0 ? ` / ${totalVisible}` : ""} 项`
+          : "多选模式 · 点击书签或全选当前列表"}
       </div>
-      {count > 0 && (
-        <div style={rightStyle}>
-          <select
-            value={moveFolderId}
-            onChange={e => setMoveFolderId(e.target.value)}
-            style={selectStyle}
-            title="移动到文件夹"
-          >
-            <option value="">移动到…</option>
-            {folders.map(f => (
-              <option key={f.id} value={f.id}>
-                {f.title}
-              </option>
-            ))}
-          </select>
+      <div style={rightStyle}>
+        {totalVisible > 0 && (
           <button
-            style={primaryBtnStyle}
-            onClick={handleMove}
-            disabled={!moveFolderId}
-            title="移动选中的书签到指定文件夹"
+            style={ghostBtnStyle}
+            onClick={allSelected ? handleClearSelection : handleSelectAll}
+            title={allSelected ? "取消当前列表的全部选中" : "选中当前列表中的全部书签"}
           >
-            <FolderInput size={14} />
-            移动
+            <CheckSquare size={14} />
+            {allSelected ? "取消全选" : "全选"}
           </button>
-          <button
-            style={primaryBtnStyle}
-            onClick={handleSmartClassify}
-            disabled={classifying}
-            title="对选中的书签重新 AI 分类"
-          >
-            <Sparkles size={14} />
-            {classifying ? "分类中..." : "重新分类"}
-          </button>
-          <button style={dangerBtnStyle} onClick={handleDelete}>
-            <Trash2 size={14} />
-            删除
-          </button>
-          <button style={cancelBtnStyle} onClick={handleCancel}>
-            <X size={14} />
-            取消
-          </button>
-        </div>
-      )}
+        )}
+        {hasSelection && (
+          <>
+            <select
+              value={moveFolderId}
+              onChange={e => setMoveFolderId(e.target.value)}
+              style={selectStyle}
+              title="移动到文件夹"
+            >
+              <option value="">移动到…</option>
+              {folders.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.title}
+                </option>
+              ))}
+            </select>
+            <button
+              style={primaryBtnStyle}
+              onClick={handleMove}
+              disabled={!moveFolderId}
+              title="移动选中的书签到指定文件夹"
+            >
+              <FolderInput size={14} />
+              移动
+            </button>
+            <button
+              style={primaryBtnStyle}
+              onClick={handleSmartClassify}
+              disabled={classifying}
+              title="对选中的书签重新 AI 分类"
+            >
+              <Sparkles size={14} />
+              {classifying ? "分类中..." : "重新分类"}
+            </button>
+            <button style={dangerBtnStyle} onClick={handleDelete}>
+              <Trash2 size={14} />
+              删除
+            </button>
+          </>
+        )}
+        <button style={cancelBtnStyle} onClick={handleCancel}>
+          <X size={14} />
+          退出
+        </button>
+      </div>
     </div>
   );
 };

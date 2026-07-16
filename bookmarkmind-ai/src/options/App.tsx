@@ -10,6 +10,7 @@ import OptionsSidebar from './components/OptionsSidebar';
 import ModelConfigSection from './components/sections/ModelConfigSection';
 import BallConfigSection from './components/sections/BallConfigSection';
 import CategoryManagementSection from './components/sections/CategoryManagementSection';
+import TagManagementSection from './components/sections/TagManagementSection';
 import NotificationSettingsSection from './components/sections/NotificationSettingsSection';
 import PersonalizationSection from './components/sections/PersonalizationSection';
 import DataManagementSection from './components/sections/DataManagementSection';
@@ -21,6 +22,7 @@ const sectionComponents: Record<SectionKey, React.FC> = {
   model: ModelConfigSection,
   ball: BallConfigSection,
   category: CategoryManagementSection,
+  tags: TagManagementSection,
   notification: NotificationSettingsSection,
   personalization: PersonalizationSection,
   data: DataManagementSection,

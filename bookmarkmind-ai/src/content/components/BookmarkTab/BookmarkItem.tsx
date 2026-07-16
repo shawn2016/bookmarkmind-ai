@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useCallback, useRef, useState } from "react";
-import { ExternalLink, StickyNote, Highlighter, Trash2 } from "lucide-react";
+import { ExternalLink, StickyNote, Highlighter, Trash2, Tags } from "lucide-react";
 import type { BookmarkItem as BookmarkItemType } from "@shared/types";
 import {
   getFaviconUrl,
@@ -13,27 +13,33 @@ import {
 import { useContentStore } from "@content/store/contentStore";
 import { useBookmarks } from "@content/hooks/useBookmarks";
 import { CatalogStamp } from "@shared/components/CatalogStamp";
+import { BookmarkTagChips } from "@content/components/TagManager/BookmarkTagChips";
+import { useTagStore } from "@content/store/tagStore";
 
 interface BookmarkItemProps {
   bookmark: BookmarkItemType;
   hasNote?: boolean;
   hasHighlight?: boolean;
+  onOpenDetail?: (bookmark: BookmarkItemType) => void;
 }
 
 export const BookmarkItem: React.FC<BookmarkItemProps> = ({
   bookmark,
   hasNote = false,
   hasHighlight = false,
+  onOpenDetail,
 }) => {
   const batchMode = useContentStore(s => s.batchMode);
   const selectedIds = useContentStore(s => s.selectedIds);
   const toggleSelected = useContentStore(s => s.toggleSelected);
+  const tagMap = useTagStore((s) => s.bookmarkTagMap);
   const { removeBookmark } = useBookmarks();
   const [isHovered, setIsHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const rowRef = useRef<HTMLDivElement>(null);
 
   const isSelected = selectedIds.has(bookmark.id);
+  const hasTags = (tagMap[bookmark.id]?.length ?? 0) > 0;
   const faviconUrl = bookmark.faviconUrl || getFaviconUrl(bookmark.url);
   // Derive a stable per-render index from the bookmark id hash so
   // the catalog number doesn't shuffle when the user reorders.
@@ -94,8 +100,17 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
     }
   }, []);
 
+  const handleOpenDetail = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onOpenDetail?.(bookmark);
+    },
+    [bookmark, onOpenDetail],
+  );
+
   const rowStyle: React.CSSProperties = {
-    height: "56px",
+    minHeight: hasTags ? "68px" : "56px",
+    height: "100%",
     padding: "8px 16px",
     display: "flex",
     alignItems: "center",
@@ -228,6 +243,7 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
         >
           {truncateUrl(bookmark.url, 50)}
         </span>
+        <BookmarkTagChips bookmarkId={bookmark.id} max={2} size="sm" />
       </div>
 
       {/* Category badge + time */}
@@ -290,6 +306,12 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
             border: "1px solid var(--bm-gray-200)",
           }}
         >
+          <ActionBtn
+            icon={<Tags size={12} />}
+            title="详情与标签"
+            onClick={handleOpenDetail}
+            testId="bookmark-detail-btn"
+          />
           <ActionBtn
             icon={<ExternalLink size={12} />}
             title="打开"

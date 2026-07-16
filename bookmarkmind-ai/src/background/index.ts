@@ -20,7 +20,8 @@ import {
   getFolders,
 } from './bookmarks/crud';
 import { preFilterBookmarks } from './bookmarks/search';
-import { classifyBookmark, batchClassify, applyClassification, autoClassifyOnCreate, reorganizeAllBookmarks, suggestCategoryForBookmark } from './bookmarks/classify';
+import { classifyBookmark, batchClassify, applyClassification, autoClassifyOnCreate, reorganizeAllBookmarks, suggestTagsForBookmark } from './bookmarks/classify';
+import { isAiReady, getAiNotReadyMessage } from '@shared/utils/ai-config';
 import { getOrganizeBackup, restoreOrganizeBackup } from './bookmarks/backup';
 
 // v2: Cleanup + Resurface
@@ -30,7 +31,7 @@ import { selectResurfaceCards, handleResurfaceAction, getResurfacePrefs, setResu
 import { initScheduler, handleAlarm, triggerCleanupScan } from './scheduler';
 
 // v2 Phase 5-6: Tags, Notes, Highlights
-import { getAllTags, createTag, updateTag, deleteTag, mergeTags, getBookmarkTags, setBookmarkTags } from './tags/crud';
+import { getAllTags, createTag, updateTag, deleteTag, mergeTags, getBookmarkTags, setBookmarkTags, getBookmarkTagMap } from './tags/crud';
 import { migrateFoldersToTags } from './tags/migrate';
 import { getNote, setNote, deleteNote, getBookmarksWithNotes } from './notes/crud';
 import { addHighlight, listHighlights, deleteHighlight, getBookmarksWithHighlights } from './highlights/crud';
@@ -216,24 +217,21 @@ async function handleMessage(
       const node = await createBookmark(url, title, folderId);
 
       const config = await getConfig();
-      let classifyResult = null;
-      if (
+      const shouldClassify =
         !skipAutoClassify &&
         config.app.autoClassify &&
-        isModelConfigured(config)
-      ) {
-        try {
-          classifyResult = await autoClassifyOnCreate(node.id, config.model);
-        } catch {
-          // 自动分类失败不影响收藏成功
-        }
+        isAiReady(config);
+
+      if (shouldClassify) {
+        void classifyAfterCreate(node.id, config, tabId);
       }
 
       return {
         success: true,
         bookmark: node,
-        classified: !!classifyResult,
-        category: classifyResult?.category,
+        bookmarkId: node.id,
+        classified: false,
+        aiAttempted: shouldClassify,
       };
     }
 
@@ -382,12 +380,18 @@ async function handleMessage(
 
     case 'AI_SUGGEST_CATEGORY': {
       const config = await getConfig();
-      if (!isModelConfigured(config)) {
-        return { category: null };
+      if (!isAiReady(config)) {
+        return { category: null, tags: [] };
       }
       const { title, url } = message.payload;
-      const category = await suggestCategoryForBookmark(title, url, config.model);
-      return { category };
+      const suggestion = await suggestTagsForBookmark(title, url, config.model);
+      if (!suggestion) {
+        return { category: null, tags: [] };
+      }
+      return {
+        category: suggestion.category,
+        tags: suggestion.tags.map((name) => ({ name, path: name })),
+      };
     }
 
     case 'AI_INTENT': {
@@ -616,6 +620,11 @@ async function handleMessage(
       return { tags };
     }
 
+    case 'TAG_GET_BOOKMARK_TAG_MAP': {
+      const map = await getBookmarkTagMap();
+      return { map };
+    }
+
     case 'TAG_SET_BOOKMARK_TAGS': {
       const { bookmarkId, tagIds } = message.payload;
       await setBookmarkTags(bookmarkId, tagIds);
@@ -687,15 +696,38 @@ async function handleMessage(
 }
 
 // ============================================================
-// AI Search — Streaming
+// Async bookmark classification (fire-and-forget)
 // ============================================================
 
-function isModelConfigured(config: ExtensionConfig): boolean {
-  if (config.model.provider === 'custom') {
-    return !!config.model.baseUrl?.trim();
+async function classifyAfterCreate(
+  bookmarkId: string,
+  config: ExtensionConfig,
+  tabId: number | undefined,
+): Promise<void> {
+  try {
+    const classifyResult = await autoClassifyOnCreate(bookmarkId, config.model);
+    if (classifyResult?.category && tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'BOOKMARK_CLASSIFIED',
+        payload: {
+          bookmarkId,
+          category: classifyResult.category,
+        },
+      }).catch(() => {});
+    }
+  } catch {
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'BOOKMARK_CLASSIFY_FAILED',
+        payload: { bookmarkId },
+      }).catch(() => {});
+    }
   }
-  return !!config.model.apiKey?.trim();
 }
+
+// ============================================================
+// AI Search — Streaming
+// ============================================================
 
 function formatSearchSummary(
   query: string,
@@ -721,13 +753,10 @@ async function handleAISearch(
 }> {
   const config = await getConfig();
 
-  if (!isModelConfigured(config)) {
+  if (!isAiReady(config)) {
     return {
       success: false,
-      error:
-        config.model.provider === 'custom'
-          ? '请先在扩展设置中配置 Base URL'
-          : '请先在扩展设置中配置 API Key',
+      error: getAiNotReadyMessage(config),
     };
   }
 
@@ -838,13 +867,10 @@ async function handleAIChat(
 }> {
   const config = await getConfig();
 
-  if (!isModelConfigured(config)) {
+  if (!isAiReady(config)) {
     return {
       success: false,
-      error:
-        config.model.provider === 'custom'
-          ? '请先在扩展设置中配置 Base URL'
-          : '请先在扩展设置中配置 API Key',
+      error: getAiNotReadyMessage(config),
     };
   }
 

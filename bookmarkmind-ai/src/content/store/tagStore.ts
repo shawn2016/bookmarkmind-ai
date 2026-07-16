@@ -8,11 +8,13 @@ import { safeSendMessage } from '@shared/utils/chrome-api';
 export interface TagStore {
   tags: Tag[];
   bookmarkTags: Map<string, Tag[]>; // bookmarkId -> Tag[]
+  bookmarkTagMap: Record<string, string[]>;
   selectedTagIds: Set<string>;
   filterMode: 'and' | 'or';
 
   // Actions
   loadTags: () => Promise<void>;
+  loadBookmarkTagMap: () => Promise<void>;
   loadBookmarkTags: (bookmarkId: string) => Promise<void>;
   createTag: (name: string, path: string, color?: string) => Promise<string>;
   updateTag: (id: string, changes: Partial<Tag>) => Promise<void>;
@@ -27,6 +29,7 @@ export interface TagStore {
 export const useTagStore = create<TagStore>((set) => ({
   tags: [],
   bookmarkTags: new Map<string, Tag[]>(),
+  bookmarkTagMap: {},
   selectedTagIds: new Set<string>(),
   filterMode: 'or',
 
@@ -34,6 +37,13 @@ export const useTagStore = create<TagStore>((set) => ({
     const response = await safeSendMessage({ type: 'TAG_LIST' }) as Record<string, unknown> | null;
     if (response?.tags) {
       set({ tags: response.tags as Tag[] });
+    }
+  },
+
+  loadBookmarkTagMap: async () => {
+    const response = await safeSendMessage({ type: 'TAG_GET_BOOKMARK_TAG_MAP' }) as Record<string, unknown> | null;
+    if (response?.map) {
+      set({ bookmarkTagMap: response.map as Record<string, string[]> });
     }
   },
 

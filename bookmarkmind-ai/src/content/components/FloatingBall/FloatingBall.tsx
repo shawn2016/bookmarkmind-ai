@@ -9,6 +9,7 @@ import { useContentStore } from "@content/store/contentStore";
 import { useBallDrag, BALL_BOTTOM_SAFE } from "@content/hooks/useDrag";
 import { safeSendMessage } from "@shared/utils/chrome-api";
 import { getEffectiveBallSize } from "@shared/utils/ball-size";
+import { getBookmarkCreateToastMessage } from "@shared/utils/bookmark-toast";
 import { useBookmarks } from "@content/hooks/useBookmarks";
 
 export const FloatingBall: React.FC = () => {
@@ -110,20 +111,23 @@ export const FloatingBall: React.FC = () => {
       success?: boolean;
       classified?: boolean;
       category?: string;
+      aiAttempted?: boolean;
+      error?: string;
     }>({
       type: "BOOKMARK_CREATE",
       payload: { url, title },
     });
 
     if (response?.success) {
-      const msg =
-        response.classified && response.category
-          ? `已收藏并归入「${response.category}」`
-          : "已快速收藏";
-      store.pushToast({ type: "success", message: msg });
+      const toast = getBookmarkCreateToastMessage(response);
+      store.pushToast(toast);
       await loadBookmarks();
     } else {
-      store.pushToast({ type: "error", message: "收藏失败" });
+      const toast = getBookmarkCreateToastMessage({
+        success: false,
+        error: response?.error,
+      });
+      store.pushToast(toast);
     }
   }, [bookmarks, loadBookmarks]);
 

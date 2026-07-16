@@ -1,15 +1,26 @@
 // ============================================================
-// ChatEmptyState — shown when AI is not yet configured
+// ChatEmptyState — AI 未配置 / 未选模型
 // ============================================================
 
 import React, { useCallback } from 'react';
 import { MessageSquareOff } from 'lucide-react';
 import { safeOpenOptionsPage } from '@shared/utils/chrome-api';
 
-export const ChatEmptyState: React.FC = () => {
+interface ChatEmptyStateProps {
+  hasCredentials: boolean;
+}
+
+export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
+  hasCredentials,
+}) => {
   const handleGoSettings = useCallback(() => {
     safeOpenOptionsPage();
   }, []);
+
+  const title = hasCredentials ? '请先选择模型' : 'AI 尚未配置';
+  const desc = hasCredentials
+    ? '测试连接成功后，从下拉列表中选择一个默认模型即可使用 AI 对话'
+    : '不配置 AI 也可以正常收藏书签。配置后可使用智能分类和对话';
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -42,6 +53,7 @@ export const ChatEmptyState: React.FC = () => {
     fontSize: 'var(--bm-text-sm)',
     color: 'var(--bm-gray-400)',
     lineHeight: 'var(--bm-leading-normal)',
+    maxWidth: '260px',
   };
 
   const btnStyle: React.CSSProperties = {
@@ -61,8 +73,8 @@ export const ChatEmptyState: React.FC = () => {
       <div style={iconWrapStyle}>
         <MessageSquareOff size={24} color="var(--bm-gray-300)" />
       </div>
-      <div style={titleStyle}>AI 尚未配置</div>
-      <div style={descStyle}>请在设置中配置 AI 模型 API Key</div>
+      <div style={titleStyle}>{title}</div>
+      <div style={descStyle}>{desc}</div>
       <button
         style={btnStyle}
         onClick={handleGoSettings}

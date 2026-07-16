@@ -2,7 +2,7 @@
 // BookmarkTab — bookmark list container
 // ============================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBookmarks } from '@content/hooks/useBookmarks';
 import { SearchBar } from '@content/components/BookmarkTab/SearchBar';
 import { CategoryTabs } from '@content/components/BookmarkTab/CategoryTabs';
@@ -11,21 +11,29 @@ import { BatchActionBar } from '@content/components/BookmarkTab/BatchActionBar';
 import { BookmarkToolbar } from '@content/components/BookmarkTab/BookmarkToolbar';
 import { useTagStore } from '@content/store/tagStore';
 import { TagChip } from '@content/components/TagManager/TagChip';
+import { TagFilterBar } from '@content/components/TagManager/TagFilterBar';
+import { TagManagerModal } from '@content/components/TagManager/TagManagerModal';
 
 export const BookmarkTab: React.FC = () => {
-  const { loadBookmarks } = useBookmarks();
+  const { loadBookmarks, reapplyFilters } = useBookmarks();
   const selectedTagIds = useTagStore((s) => s.selectedTagIds);
   const filterMode = useTagStore((s) => s.filterMode);
   const toggleTagSelection = useTagStore((s) => s.toggleTagSelection);
   const setFilterMode = useTagStore((s) => s.setFilterMode);
   const tags = useTagStore((s) => s.tags);
   const loadTags = useTagStore((s) => s.loadTags);
+  const loadBookmarkTagMap = useTagStore((s) => s.loadBookmarkTagMap);
+  const [tagManagerOpen, setTagManagerOpen] = useState(false);
 
-  // Load tags on mount
   useEffect(() => {
     loadBookmarks();
     loadTags();
-  }, [loadBookmarks, loadTags]);
+    loadBookmarkTagMap();
+  }, [loadBookmarks, loadTags, loadBookmarkTagMap]);
+
+  useEffect(() => {
+    void loadBookmarkTagMap().then(() => reapplyFilters());
+  }, [selectedTagIds, filterMode, loadBookmarkTagMap, reapplyFilters]);
 
   const hasTagFilter = selectedTagIds.size > 0;
 
@@ -38,11 +46,11 @@ export const BookmarkTab: React.FC = () => {
 
   return (
     <div style={containerStyle}>
-      <BookmarkToolbar />
+      <BookmarkToolbar onManageTags={() => setTagManagerOpen(true)} />
       <BatchActionBar />
       <SearchBar />
       <CategoryTabs />
-      {/* Tag filter bar */}
+      <TagFilterBar onManageTags={() => setTagManagerOpen(true)} />
       {hasTagFilter && (
         <div style={tagFilterStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--bm-space-1)', flexWrap: 'wrap', flex: 1 }}>
@@ -76,13 +84,19 @@ export const BookmarkTab: React.FC = () => {
         </div>
       )}
       <BookmarkList />
+      <TagManagerModal
+        open={tagManagerOpen}
+        onClose={() => {
+          setTagManagerOpen(false);
+          void loadTags();
+          void loadBookmarkTagMap().then(() => reapplyFilters());
+        }}
+      />
     </div>
   );
 };
 
 export default BookmarkTab;
-
-// ---- Styles ----
 
 const tagFilterStyle: React.CSSProperties = {
   display: 'flex',

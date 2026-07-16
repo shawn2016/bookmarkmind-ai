@@ -50,6 +50,7 @@ export type MessageType =
   | 'TAG_DELETE'
   | 'TAG_MERGE'
   | 'TAG_GET_BOOKMARK_TAGS'
+  | 'TAG_GET_BOOKMARK_TAG_MAP'
   | 'TAG_SET_BOOKMARK_TAGS'
   | 'TAG_MIGRATE_FROM_FOLDERS'
   // ---- v2 新增 — 备注与高亮 ----
@@ -131,6 +132,7 @@ export type ExtMessage =
   | MessageWithPayload<'TAG_DELETE', { id: string }>
   | MessageWithPayload<'TAG_MERGE', { sourceId: string; targetId: string }>
   | MessageWithPayload<'TAG_GET_BOOKMARK_TAGS', { bookmarkId: string }>
+  | BaseMessage<'TAG_GET_BOOKMARK_TAG_MAP'>
   | MessageWithPayload<'TAG_SET_BOOKMARK_TAGS', { bookmarkId: string; tagIds: string[] }>
   | BaseMessage<'TAG_MIGRATE_FROM_FOLDERS'>
   // ---- v2 新增 — 备注与高亮 ----

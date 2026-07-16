@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.tsx-loader-yilNeWmu.js"
+        "assets/index.tsx-loader-C8HKrGf5.js"
       ],
       "matches": [
         "<all_urls>"
@@ -67,10 +67,11 @@
       ],
       "resources": [
         "assets/globe-2DA5Xby1.js",
-        "assets/format-BQFh7gkZ.js",
+        "assets/TagManager-D79BXMy8.js",
         "assets/api-url-CXEvnAra.js",
-        "assets/settings-BOfzAWYR.js",
-        "assets/index.tsx-OOManwwp.js"
+        "assets/ai-config-bxGO0FrS.js",
+        "assets/settings-LB-FKtJl.js",
+        "assets/index.tsx-C1FRdCeK.js"
       ],
       "use_dynamic_url": false
     }

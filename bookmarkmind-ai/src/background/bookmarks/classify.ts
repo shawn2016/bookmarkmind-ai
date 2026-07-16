@@ -31,7 +31,7 @@ const SYSTEM_FOLDER_NAMES = new Set([
   '未命名文件夹',
 ]);
 
-/** 书签栏 / 其他书签根目录下的直接链接视为零散 */
+/** 系统根目录 ID（不作为用户文件夹） */
 const SCATTERED_PARENT_IDS = new Set(['1', '2']);
 
 /** 单条分类时新建分类上限 */
@@ -58,6 +58,10 @@ export async function classifyBookmark(
   config: ModelConfig,
   options?: { preferExisting?: boolean },
 ): Promise<ClassifyResult> {
+  if (await isBookmarkOnBookmarksBarRoot(bookmarkId)) {
+    throw new Error('书签栏上的书签为用户手动摆放，不参与智能分类');
+  }
+
   const nodes = await chrome.bookmarks.get([bookmarkId]);
   if (nodes.length === 0) {
     throw new Error(`Bookmark not found: ${bookmarkId}`);
@@ -95,11 +99,18 @@ export async function batchClassify(
   config: ModelConfig,
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ id: string; result: ClassifyResult }[]> {
+  const eligible: string[] = [];
+  for (const id of bookmarkIds) {
+    if (!(await isBookmarkOnBookmarksBarRoot(id))) {
+      eligible.push(id);
+    }
+  }
+
   const BATCH_SIZE = 10;
   const results: { id: string; result: ClassifyResult }[] = [];
 
-  for (let i = 0; i < bookmarkIds.length; i += BATCH_SIZE) {
-    const batch = bookmarkIds.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < eligible.length; i += BATCH_SIZE) {
+    const batch = eligible.slice(i, i + BATCH_SIZE);
 
     const batchResults = await Promise.allSettled(
       batch.map(async (id) => {
@@ -115,8 +126,8 @@ export async function batchClassify(
     }
 
     onProgress?.(
-      Math.min(i + BATCH_SIZE, bookmarkIds.length),
-      bookmarkIds.length,
+      Math.min(i + BATCH_SIZE, eligible.length),
+      eligible.length,
     );
   }
 
@@ -124,11 +135,14 @@ export async function batchClassify(
 }
 
 /**
- * 获取散落在书签栏/其他书签根目录下的书签（未归入文件夹）。
+ * 获取散落在「其他书签」根目录下的书签（未归入文件夹）。
+ * 书签栏根目录下的链接视为用户手动摆放，不参与整理。
  */
 export async function getScatteredBookmarks(): Promise<BookmarkItem[]> {
   const all = await getAllBookmarks();
-  return all.filter((b) => SCATTERED_PARENT_IDS.has(b.parentId));
+  const other = await findOtherBookmarksFolder();
+  const otherId = other?.id ?? '2';
+  return all.filter((b) => b.parentId === otherId);
 }
 
 /**
@@ -259,15 +273,28 @@ export async function reorganizeAllBookmarks(
     };
   }
 
-  onProgress?.(0, all.length, '正在备份书签…');
+  const barId = await getBookmarksBarId();
+  const toOrganize = all.filter((b) => b.parentId !== barId);
+  const barProtected = all.length - toOrganize.length;
+
+  if (toOrganize.length === 0) {
+    return {
+      organized: 0,
+      skipped: 0,
+      categoriesUsed: [],
+      summary: `书签栏上的 ${barProtected} 个书签为用户手动摆放，未参与整理`,
+    };
+  }
+
+  onProgress?.(0, toOrganize.length, '正在备份书签…');
   const backup = await createOrganizeBackup();
 
-  onProgress?.(0, all.length, '正在清空现有分类…');
+  onProgress?.(0, toOrganize.length, '正在清空现有分类…');
 
   const other = await findOtherBookmarksFolder();
   const stagingId = other?.id ?? '2';
 
-  for (const bm of all) {
+  for (const bm of toOrganize) {
     if (bm.parentId !== stagingId) {
       try {
         await moveBookmark(bm.id, stagingId);
@@ -286,9 +313,9 @@ export async function reorganizeAllBookmarks(
   let skipped = 0;
   const categoriesUsed = new Set<string>();
 
-  for (let i = 0; i < all.length; i += ORGANIZE_BATCH_SIZE) {
-    const batch = all.slice(i, i + ORGANIZE_BATCH_SIZE);
-    onProgress?.(i, all.length, '正在 AI 重新分类…');
+  for (let i = 0; i < toOrganize.length; i += ORGANIZE_BATCH_SIZE) {
+    const batch = toOrganize.slice(i, i + ORGANIZE_BATCH_SIZE);
+    onProgress?.(i, toOrganize.length, '正在 AI 重新分类…');
 
     const prompt = buildReorganizeAllPrompt(
       batch.map((b) => ({ id: b.id, title: b.title, url: b.url })),
@@ -340,8 +367,8 @@ export async function reorganizeAllBookmarks(
     }
 
     onProgress?.(
-      Math.min(i + ORGANIZE_BATCH_SIZE, all.length),
-      all.length,
+      Math.min(i + ORGANIZE_BATCH_SIZE, toOrganize.length),
+      toOrganize.length,
       '正在移动书签…',
     );
   }
@@ -357,11 +384,14 @@ export async function reorganizeAllBookmarks(
     skipped += stagingLeft;
   }
 
+  const barNote =
+    barProtected > 0 ? `，书签栏 ${barProtected} 个手动摆放未动` : '';
+
   return {
     organized,
     skipped,
     categoriesUsed: Array.from(categoriesUsed),
-    summary: `已重新分类 ${organized} 个书签到书签栏下 ${categoriesUsed.size} 个文件夹${skipped > 0 ? `，${skipped} 个未分类` : ''}。已自动备份 ${backup.bookmarkCount} 个书签，可在设置→数据管理中恢复。`,
+    summary: `已重新分类 ${organized} 个书签到书签栏下 ${categoriesUsed.size} 个文件夹${skipped > 0 ? `，${skipped} 个未分类` : ''}${barNote}。已自动备份 ${backup.bookmarkCount} 个书签，可在设置→数据管理中恢复。`,
   };
 }
 
@@ -446,6 +476,10 @@ export async function autoClassifyOnCreate(
   bookmarkId: string,
   config: ModelConfig,
 ): Promise<ClassifyResult | null> {
+  if (await isBookmarkOnBookmarksBarRoot(bookmarkId)) {
+    return null;
+  }
+
   try {
     const result = await classifyBookmark(bookmarkId, config, {
       preferExisting: true,
@@ -499,6 +533,19 @@ export async function applyClassification(
 }
 
 // ---- Helpers ----
+
+async function getBookmarksBarId(): Promise<string> {
+  const bar = await findBookmarksBarFolder();
+  return bar?.id ?? '1';
+}
+
+/** 书签栏根目录下的链接 = 用户手动拖放，不参与智能分类 */
+async function isBookmarkOnBookmarksBarRoot(bookmarkId: string): Promise<boolean> {
+  const nodes = await chrome.bookmarks.get([bookmarkId]);
+  if (nodes.length === 0) return false;
+  const barId = await getBookmarksBarId();
+  return nodes[0].parentId === barId;
+}
 
 async function findBookmarksBarFolder(): Promise<BookmarkNode | undefined> {
   const tree = await getBookmarkTree();

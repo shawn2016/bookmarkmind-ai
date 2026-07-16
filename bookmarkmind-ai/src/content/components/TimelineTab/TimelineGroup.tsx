@@ -2,11 +2,14 @@
 // TimelineGroup — 时间分组卡片（标题 + 数量 + 书签列表）
 // ============================================================
 import React, { useRef } from 'react';
+import { Tags } from 'lucide-react';
 import type { BookmarkItem } from '@shared/types';
 import { getRelativeTime } from '@content/hooks/useTimeline';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { BookmarkTagChips } from '@content/components/TagManager/BookmarkTagChips';
 
 const CARD_HEIGHT = 56;
+const CARD_HEIGHT_WITH_TAGS = 72;
 
 interface TimelineGroupProps {
   label: string;
@@ -15,6 +18,8 @@ interface TimelineGroupProps {
   resurfaceBookmarkIds?: Set<string>;
   bookmarkNotes?: Set<string>;
   bookmarkHighlights?: Set<string>;
+  bookmarkTagMap?: Record<string, string[]>;
+  onOpenDetail?: (bookmark: BookmarkItem) => void;
 }
 
 export const TimelineGroup: React.FC<TimelineGroupProps> = ({
@@ -24,13 +29,20 @@ export const TimelineGroup: React.FC<TimelineGroupProps> = ({
   resurfaceBookmarkIds,
   bookmarkNotes,
   bookmarkHighlights,
+  bookmarkTagMap = {},
+  onOpenDetail,
 }) => {
   const groupRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: bookmarks.length,
     getScrollElement: () => groupRef.current,
-    estimateSize: () => CARD_HEIGHT,
+    estimateSize: (index) => {
+      const bm = bookmarks[index];
+      return (bookmarkTagMap[bm.id]?.length ?? 0) > 0
+        ? CARD_HEIGHT_WITH_TAGS
+        : CARD_HEIGHT;
+    },
     overscan: 5,
   });
 
@@ -67,6 +79,8 @@ export const TimelineGroup: React.FC<TimelineGroupProps> = ({
             try {
               hostname = new URL(bm.url).hostname.replace(/^www\./, '');
             } catch { /* ignore invalid URL */ }
+
+            const hasTags = (bookmarkTagMap[bm.id]?.length ?? 0) > 0;
 
             return (
               <div
@@ -106,7 +120,25 @@ export const TimelineGroup: React.FC<TimelineGroupProps> = ({
                   )}
                   <span style={timeStyle}>{getRelativeTime(bm.dateAdded)}</span>
                 </div>
+                {hasTags && (
+                  <div style={{ marginTop: '4px' }}>
+                    <BookmarkTagChips bookmarkId={bm.id} max={3} size="sm" />
+                  </div>
+                )}
               </div>
+
+              {onOpenDetail && (
+                <button
+                  style={detailBtnStyle}
+                  title="详情与标签"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDetail(bm);
+                  }}
+                >
+                  <Tags size={12} />
+                </button>
+              )}
             </div>
             );
           })}
@@ -210,4 +242,19 @@ const timeStyle: React.CSSProperties = {
   fontSize: 'var(--bm-text-xs)',
   color: 'var(--bm-gray-400)',
   marginLeft: 'auto',
+};
+
+const detailBtnStyle: React.CSSProperties = {
+  border: '1px solid var(--bm-gray-200)',
+  borderRadius: 'var(--bm-radius-sm)',
+  background: 'var(--bm-gray-0)',
+  color: 'var(--bm-gray-500)',
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  flexShrink: 0,
+  marginLeft: 'var(--bm-space-1)',
 };

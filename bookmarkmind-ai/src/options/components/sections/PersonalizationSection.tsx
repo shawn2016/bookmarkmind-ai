@@ -6,7 +6,7 @@
 import React from 'react';
 import { Palette, Sparkles, Trash2, Info } from 'lucide-react';
 import { useOptionsStore } from '@options/store/optionsStore';
-import type { ThemeMode, Language } from '@shared/types';
+import type { ThemeMode } from '@shared/types';
 import {
   SectionCard,
   SubSection,
@@ -20,11 +20,6 @@ const THEME_OPTIONS: ReadonlyArray<{ value: ThemeMode; label: string }> = [
   { value: 'light', label: '浅色' },
   { value: 'dark', label: '深色' },
   { value: 'system', label: '跟随系统' },
-];
-
-const LANG_OPTIONS: ReadonlyArray<{ value: Language; label: string }> = [
-  { value: 'zh', label: '中文' },
-  { value: 'en', label: 'English' },
 ];
 
 type FontSize = 'small' | 'medium' | 'large';
@@ -41,13 +36,13 @@ const PersonalizationSection: React.FC = () => {
   return (
     <SectionCard
       title="个性化"
-      subtitle="自定义扩展的外观、语言和行为偏好"
+      subtitle="自定义扩展的外观和行为偏好"
     >
       {/* 外观 */}
       <SubSection
         icon={<Palette size={15} strokeWidth={2.2} />}
         title="外观"
-        caption="主题 · 语言 · 字号"
+        caption="主题 · 字号"
       >
         <Field label="主题" description="选择扩展界面的配色方案">
           <Segmented<ThemeMode>
@@ -55,15 +50,6 @@ const PersonalizationSection: React.FC = () => {
             value={app.theme}
             onChange={(v) => setAppConfig({ theme: v })}
             ariaLabel="主题"
-          />
-        </Field>
-
-        <Field label="语言" description="界面显示语言">
-          <Segmented<Language>
-            options={LANG_OPTIONS}
-            value={app.language}
-            onChange={(v) => setAppConfig({ language: v })}
-            ariaLabel="语言"
           />
         </Field>
 
@@ -104,7 +90,7 @@ const PersonalizationSection: React.FC = () => {
 
       <div className="mt-bm-5">
         <Callout icon={<Info size={14} strokeWidth={2} />} tone="info">
-          主题和语言设置会立即生效。字体大小调整可能需要刷新页面才能完全生效。
+          主题设置会立即生效。字体大小调整可能需要刷新页面才能完全生效。
         </Callout>
       </div>
     </SectionCard>

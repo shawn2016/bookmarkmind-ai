@@ -11,6 +11,7 @@ import { ChatEmptyState } from '@content/components/ChatTab/ChatEmptyState';
 
 export const ChatTab: React.FC = () => {
   const aiConfigured = useContentStore((s) => s.aiConfigured);
+  const hasAiCredentials = useContentStore((s) => s.hasAiCredentials);
   const { loadBookmarks } = useBookmarks();
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export const ChatTab: React.FC = () => {
   }, [loadBookmarks]);
 
   if (!aiConfigured) {
-    return <ChatEmptyState />;
+    return <ChatEmptyState hasCredentials={hasAiCredentials} />;
   }
 
   const containerStyle: React.CSSProperties = {

@@ -66,9 +66,9 @@ const OnboardingCard: React.FC = () => {
   return (
     <Callout icon={<Wand2 size={15} strokeWidth={2} />} tone="privacy">
       <strong style={{ color: 'var(--bm-text-heading)' }}>欢迎，</strong>
-      在下方选 AI 服务商 → 填 API Key → 点
-      <strong style={{ color: 'var(--bm-text-primary)' }}> 测试连接 </strong>
-      验证 — 成功后即可在任意网页使用 AI 书签整理。
+      不配置 AI 也可以正常收藏书签。若需智能分类和对话，请在下方选服务商 → 填 API Key →
+      点<strong style={{ color: 'var(--bm-text-primary)' }}> 测试连接 </strong>
+      并选择一个模型。
     </Callout>
   );
 };
@@ -183,7 +183,11 @@ const ModelConfigSection: React.FC = () => {
               {!testResult.success && (
                 <AlertCircle size={14} strokeWidth={2} style={{ flexShrink: 0, marginTop: '1px' }} />
               )}
-              <span>{testResult.message}</span>
+              <span>
+                {testResult.success && testResult.models?.length
+                  ? `连接成功！已检测到 ${testResult.models.length} 个模型，请在下方选择一个作为默认`
+                  : testResult.message}
+              </span>
             </div>
           )}
         </Field>

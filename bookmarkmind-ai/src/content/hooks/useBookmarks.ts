@@ -4,9 +4,47 @@
 
 import { useCallback, useRef } from "react";
 import { useContentStore } from "@content/store/contentStore";
+import { useTagStore } from "@content/store/tagStore";
 import type { BookmarkItem } from "@shared/types";
 import { debounce } from "@shared/utils/debounce";
 import { safeSendMessage } from "@shared/utils/chrome-api";
+
+function applyBookmarkFilters(
+  bookmarks: BookmarkItem[],
+  query: string,
+  category: string | null,
+  selectedTagIds: Set<string>,
+  filterMode: "and" | "or",
+  tagMap: Record<string, string[]>,
+): BookmarkItem[] {
+  let filtered = bookmarks;
+  const q = query.toLowerCase().trim();
+
+  if (q) {
+    filtered = filtered.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.url.toLowerCase().includes(q),
+    );
+  }
+
+  if (category) {
+    filtered = filtered.filter((b) => b.parentId === category);
+  }
+
+  if (selectedTagIds.size > 0) {
+    const ids = Array.from(selectedTagIds);
+    filtered = filtered.filter((b) => {
+      const bTags = tagMap[b.id] ?? [];
+      if (filterMode === "and") {
+        return ids.every((tid) => bTags.includes(tid));
+      }
+      return ids.some((tid) => bTags.includes(tid));
+    });
+  }
+
+  return filtered;
+}
 
 /**
  * Bookmark hook — load, search, filter, batch operations.
@@ -16,11 +54,34 @@ export function useBookmarks() {
 
   const bookmarksRef = useRef<BookmarkItem[]>([]);
   const activeCategoryRef = useRef<string | null>(null);
+  const searchQueryRef = useRef("");
+  const selectedTagIdsRef = useRef<Set<string>>(new Set());
+  const filterModeRef = useRef<"and" | "or">("or");
+  const tagMapRef = useRef<Record<string, string[]>>({});
 
-  useContentStore.subscribe(state => {
+  useContentStore.subscribe((state) => {
     bookmarksRef.current = state.bookmarks;
     activeCategoryRef.current = state.activeCategory;
+    searchQueryRef.current = state.searchQuery;
   });
+
+  useTagStore.subscribe((state) => {
+    selectedTagIdsRef.current = state.selectedTagIds;
+    filterModeRef.current = state.filterMode;
+    tagMapRef.current = state.bookmarkTagMap;
+  });
+
+  const reapplyFilters = useCallback(() => {
+    const filtered = applyBookmarkFilters(
+      bookmarksRef.current,
+      searchQueryRef.current,
+      activeCategoryRef.current,
+      selectedTagIdsRef.current,
+      filterModeRef.current,
+      tagMapRef.current,
+    );
+    setFilteredBookmarks(filtered);
+  }, [setFilteredBookmarks]);
 
   const loadBookmarks = useCallback(async () => {
     const response = await safeSendMessage<{ bookmarks?: BookmarkItem[] }>({
@@ -31,48 +92,37 @@ export function useBookmarks() {
     if (response?.bookmarks && Array.isArray(response.bookmarks)) {
       const items: BookmarkItem[] = response.bookmarks;
       setBookmarks(items);
-      setFilteredBookmarks(items);
+      const filtered = applyBookmarkFilters(
+        items,
+        searchQueryRef.current,
+        activeCategoryRef.current,
+        selectedTagIdsRef.current,
+        filterModeRef.current,
+        tagMapRef.current,
+      );
+      setFilteredBookmarks(filtered);
     }
   }, [setBookmarks, setFilteredBookmarks]);
 
   const searchBookmarks = useCallback(
     (query: string) => {
       const doSearch = () => {
-        const q = query.toLowerCase().trim();
-        const category = activeCategoryRef.current;
-        let filtered = bookmarksRef.current;
-
-        if (q) {
-          filtered = filtered.filter(
-            b =>
-              b.title.toLowerCase().includes(q) ||
-              b.url.toLowerCase().includes(q),
-          );
-        }
-
-        if (category) {
-          filtered = filtered.filter(b => b.parentId === category);
-        }
-
-        setFilteredBookmarks(filtered);
+        searchQueryRef.current = query;
+        reapplyFilters();
       };
 
       debounce(doSearch, 300)();
     },
-    [setFilteredBookmarks],
+    [reapplyFilters],
   );
 
   const filterByCategory = useCallback(
     (cat: string | null) => {
       useContentStore.getState().setActiveCategory(cat);
-
-      let filtered = bookmarksRef.current;
-      if (cat) {
-        filtered = filtered.filter(b => b.parentId === cat);
-      }
-      setFilteredBookmarks(filtered);
+      activeCategoryRef.current = cat;
+      reapplyFilters();
     },
-    [setFilteredBookmarks],
+    [reapplyFilters],
   );
 
   const removeBookmark = useCallback(async (id: string): Promise<boolean> => {
@@ -166,6 +216,7 @@ export function useBookmarks() {
     loadBookmarks,
     searchBookmarks,
     filterByCategory,
+    reapplyFilters,
     removeBookmark,
     batchDelete,
     batchMove,

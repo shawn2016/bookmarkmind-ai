@@ -18,6 +18,10 @@ import {
   shouldShowBall,
 } from "@shared/utils/url-match";
 import { safeStorageGet, isContextValid } from "@shared/utils/chrome-api";
+import {
+  getClassifyFailedToastMessage,
+  getClassifySuccessToastMessage,
+} from "@shared/utils/bookmark-toast";
 import App from "@content/App";
 
 function shouldSkip(): boolean {
@@ -126,6 +130,30 @@ async function init(): Promise<void> {
             });
           }
           store.setStreaming(false);
+          break;
+        }
+
+        case "TOAST": {
+          const store = useContentStore.getState();
+          store.pushToast({
+            type: message.payload?.variant ?? "info",
+            message: message.payload?.message ?? "",
+          });
+          break;
+        }
+
+        case "BOOKMARK_CLASSIFIED": {
+          const category = message.payload?.category;
+          if (category) {
+            useContentStore.getState().pushToast(
+              getClassifySuccessToastMessage(category),
+            );
+          }
+          break;
+        }
+
+        case "BOOKMARK_CLASSIFY_FAILED": {
+          useContentStore.getState().pushToast(getClassifyFailedToastMessage());
           break;
         }
       }

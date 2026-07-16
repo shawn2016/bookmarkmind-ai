@@ -126,7 +126,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             fontStyle: 'italic',
           }}
         >
-          已从服务商获取 {models.length} 个可用模型，可直接选择
+          已从服务商获取 {models.length} 个可用模型，请选择一个作为默认
         </p>
       )}
     </div>

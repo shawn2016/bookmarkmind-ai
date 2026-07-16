@@ -14,6 +14,7 @@ export type SectionKey =
   | 'model'
   | 'ball'
   | 'category'
+  | 'tags'
   | 'notification'
   | 'personalization'
   | 'data'

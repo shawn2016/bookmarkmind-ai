@@ -6,7 +6,9 @@ import { TagChip } from './TagChip';
 import { useTagStore } from '@content/store/tagStore';
 import type { Tag } from '@shared/types';
 
-export const TagManager: React.FC = () => {
+export const TagManager: React.FC<{ showTitle?: boolean }> = ({
+  showTitle = true,
+}) => {
   const tags = useTagStore((s) => s.tags);
   const loadTags = useTagStore((s) => s.loadTags);
   const createTag = useTagStore((s) => s.createTag);
@@ -20,20 +22,25 @@ export const TagManager: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTags();
-  }, []);
+  }, [loadTags]);
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      setCreateError('请输入标签名称');
+      return;
+    }
     const path = newPath.trim() || newName.trim();
+    setCreateError(null);
     try {
       await createTag(newName.trim(), path);
       setNewName('');
       setNewPath('');
-    } catch {
-      // silent
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : '创建失败，请重试');
     }
   };
 
@@ -66,106 +73,104 @@ export const TagManager: React.FC = () => {
   // Group tags by path prefix
   const groupedTags = groupByPath(tags);
 
-  if (tags.length === 0) {
-    return (
-      <div style={containerStyle}>
-        <h3 style={titleStyle}>标签管理</h3>
-        <div style={emptyStyle}>
-          <span style={{ color: 'var(--bm-gray-400)', fontSize: 'var(--bm-text-sm)' }}>
-            暂无标签
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={containerStyle}>
-      <h3 style={titleStyle}>标签管理</h3>
+      {showTitle && <h3 style={titleStyle}>标签管理</h3>}
 
-      {/* Create new tag */}
+      {/* Create new tag — always visible, including empty state */}
       <div style={createRowStyle}>
         <input
           type="text"
-          placeholder="标签名称"
+          placeholder="标签名称，如：待读"
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+          onChange={(e) => {
+            setNewName(e.target.value);
+            if (createError) setCreateError(null);
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && void handleCreate()}
           style={inputStyle}
+          autoFocus
         />
-        <input
-          type="text"
-          placeholder="路径 (可选)"
-          value={newPath}
-          onChange={(e) => setNewPath(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-          style={{ ...inputStyle, width: '80px' }}
-        />
-        <button style={btnStyle} onClick={handleCreate}>新建</button>
+        <button style={primaryBtnStyle} onClick={() => void handleCreate()}>
+          新建
+        </button>
       </div>
+      {createError && (
+        <p style={errorStyle}>{createError}</p>
+      )}
 
-      {/* Tag list */}
-      <div style={listStyle}>
-        {groupedTags.map((tag) => (
-          <div key={tag.id} style={tagRowStyle}>
-            {editingId === tag.id ? (
-              <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleUpdate(tag.id)}
-                  style={{ ...inputStyle, flex: 1 }}
-                  autoFocus
-                />
-                <button style={smallBtnStyle} onClick={() => handleUpdate(tag.id)}>保存</button>
-                <button style={smallBtnStyle} onClick={() => setEditingId(null)}>取消</button>
-              </div>
-            ) : (
-              <>
-                <TagChip tag={tag} size="sm" />
-                <span style={pathStyle}>{tag.path}</span>
-                <span style={sourceLabelStyle}>
-                  {tag.source === 'auto' ? 'AI' : tag.source === 'migrated' ? '迁移' : '手动'}
-                </span>
-                <div style={actionGroupStyle}>
-                  {mergeSource === tag.id ? (
-                    <button style={smallBtnStyle} onClick={handleMerge}>
-                      确认合并
-                    </button>
-                  ) : (
-                    <>
-                      <button style={smallBtnStyle} onClick={() => startEdit(tag)}>编辑</button>
-                      <button style={smallBtnStyle} onClick={() => setMergeSource(tag.id)}>合并</button>
-                      <button
-                        style={{ ...smallBtnStyle, color: 'var(--bm-error-500)' }}
-                        onClick={() => setConfirmDelete(tag.id)}
-                      >
-                        删除
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Delete confirmation */}
-      {confirmDelete && (
-        <div style={confirmStyle}>
-          <span>确定要删除此标签吗？其关联关系将被清除。</span>
-          <div style={{ display: 'flex', gap: 'var(--bm-space-2)' }}>
-            <button
-              style={{ ...btnStyle, background: 'var(--bm-error-500)', color: '#fff' }}
-              onClick={() => handleDelete(confirmDelete)}
-            >
-              确认删除
-            </button>
-            <button style={btnStyle} onClick={() => setConfirmDelete(null)}>取消</button>
-          </div>
+      {tags.length === 0 ? (
+        <div style={emptyStyle}>
+          <span style={{ color: 'var(--bm-gray-400)', fontSize: 'var(--bm-text-sm)' }}>
+            还没有标签，在上方输入名称后点「新建」
+          </span>
         </div>
+      ) : (
+        <>
+          {/* Tag list */}
+          <div style={listStyle}>
+            {groupedTags.map((tag) => (
+              <div key={tag.id} style={tagRowStyle}>
+                {editingId === tag.id ? (
+                  <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleUpdate(tag.id)}
+                      style={{ ...inputStyle, flex: 1 }}
+                      autoFocus
+                    />
+                    <button style={smallBtnStyle} onClick={() => handleUpdate(tag.id)}>保存</button>
+                    <button style={smallBtnStyle} onClick={() => setEditingId(null)}>取消</button>
+                  </div>
+                ) : (
+                  <>
+                    <TagChip tag={tag} size="sm" />
+                    <span style={pathStyle}>{tag.path}</span>
+                    <span style={sourceLabelStyle}>
+                      {tag.source === 'auto' ? 'AI' : tag.source === 'migrated' ? '迁移' : '手动'}
+                    </span>
+                    <div style={actionGroupStyle}>
+                      {mergeSource === tag.id ? (
+                        <button style={smallBtnStyle} onClick={handleMerge}>
+                          确认合并
+                        </button>
+                      ) : (
+                        <>
+                          <button style={smallBtnStyle} onClick={() => startEdit(tag)}>编辑</button>
+                          <button style={smallBtnStyle} onClick={() => setMergeSource(tag.id)}>合并</button>
+                          <button
+                            style={{ ...smallBtnStyle, color: 'var(--bm-error-500)' }}
+                            onClick={() => setConfirmDelete(tag.id)}
+                          >
+                            删除
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Delete confirmation */}
+          {confirmDelete && (
+            <div style={confirmStyle}>
+              <span>确定要删除此标签吗？其关联关系将被清除。</span>
+              <div style={{ display: 'flex', gap: 'var(--bm-space-2)' }}>
+                <button
+                  style={{ ...btnStyle, background: 'var(--bm-error-500)', color: '#fff' }}
+                  onClick={() => handleDelete(confirmDelete)}
+                >
+                  确认删除
+                </button>
+                <button style={btnStyle} onClick={() => setConfirmDelete(null)}>取消</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -178,7 +183,7 @@ function groupByPath(tags: Tag[]): Tag[] {
 // ---- Styles ----
 
 const containerStyle: React.CSSProperties = {
-  padding: 'var(--bm-space-4)',
+  padding: 0,
 };
 
 const titleStyle: React.CSSProperties = {
@@ -191,7 +196,14 @@ const titleStyle: React.CSSProperties = {
 const emptyStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
-  padding: 'var(--bm-space-6)',
+  padding: 'var(--bm-space-4) var(--bm-space-2)',
+  textAlign: 'center',
+};
+
+const errorStyle: React.CSSProperties = {
+  margin: '0 0 var(--bm-space-3)',
+  fontSize: 'var(--bm-text-xs)',
+  color: 'var(--bm-error-500)',
 };
 
 const createRowStyle: React.CSSProperties = {
@@ -220,6 +232,14 @@ const btnStyle: React.CSSProperties = {
   padding: 'var(--bm-space-1) var(--bm-space-3)',
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
+};
+
+const primaryBtnStyle: React.CSSProperties = {
+  ...btnStyle,
+  background: 'var(--bm-primary-500)',
+  color: '#fff',
+  border: 'none',
+  fontWeight: 500,
 };
 
 const listStyle: React.CSSProperties = {

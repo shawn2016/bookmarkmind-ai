@@ -23,10 +23,13 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
   const [loading, setLoading] = useState(true);
 
   const setBookmarkTags = useTagStore((s) => s.setBookmarkTags);
+  const loadTags = useTagStore((s) => s.loadTags);
+  const loadBookmarkTagMap = useTagStore((s) => s.loadBookmarkTagMap);
 
   useEffect(() => {
+    void loadTags();
     loadDetails();
-  }, [bookmark.id]);
+  }, [bookmark.id, loadTags]);
 
   const loadDetails = async () => {
     setLoading(true);
@@ -54,6 +57,7 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
   const handleTagsChange = async (ids: string[]) => {
     setSelectedTagIds(ids);
     await setBookmarkTags(bookmark.id, ids);
+    await loadBookmarkTagMap();
   };
 
   const handleOpen = () => {

@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useCallback, useState } from "react";
-import { Sparkles, CheckSquare, FolderTree } from "lucide-react";
+import { Sparkles, CheckSquare, FolderTree, Tags } from "lucide-react";
 import { useContentStore } from "@content/store/contentStore";
 import { useBookmarks } from "@content/hooks/useBookmarks";
 import { safeSendMessage, safeOpenOptionsPage } from "@shared/utils/chrome-api";
@@ -11,14 +11,17 @@ import { safeSendMessage, safeOpenOptionsPage } from "@shared/utils/chrome-api";
 const REORGANIZE_WARNING = `⚠️ 一键整理将执行以下操作：
 
 1. 打破现有书签文件夹结构（用户自建文件夹将被删除）
-2. 将所有书签移至临时区域后，由 AI 重新分类
+2. 将待整理书签移至临时区域后，由 AI 重新分类
 3. 新建分类不超过 10 个
+4. 书签栏上直接摆放的书签（手动拖入）不会参与整理
 
 开始前会自动创建完整备份，可在「设置 → 数据管理」中一键恢复。
 
 确定要继续吗？`;
 
-export const BookmarkToolbar: React.FC = () => {
+export const BookmarkToolbar: React.FC<{
+  onManageTags?: () => void;
+}> = ({ onManageTags }) => {
   const batchMode = useContentStore(s => s.batchMode);
   const bookmarks = useContentStore(s => s.bookmarks);
   const aiConfigured = useContentStore(s => s.aiConfigured);
@@ -30,7 +33,7 @@ export const BookmarkToolbar: React.FC = () => {
     if (!aiConfigured) {
       useContentStore.getState().pushToast({
         type: "error",
-        message: "请先在设置中配置 AI 模型",
+        message: "请先在设置中配置 AI 并选择模型",
       });
       return;
     }
@@ -153,6 +156,12 @@ export const BookmarkToolbar: React.FC = () => {
           <FolderTree size={13} />
           书签管理
         </button>
+        {onManageTags && (
+          <button style={btnStyle()} onClick={onManageTags}>
+            <Tags size={13} />
+            管理标签
+          </button>
+        )}
       </div>
     </div>
   );

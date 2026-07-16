@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { useContentStore } from '@content/store/contentStore';
 import { safeSendMessage } from '@shared/utils/chrome-api';
+import { getBookmarkCreateToastMessage } from '@shared/utils/bookmark-toast';
 import { useBookmarks } from '@content/hooks/useBookmarks';
 import { TagSelector } from '@content/components/TagManager/TagSelector';
 import { useTagStore } from '@content/store/tagStore';
@@ -81,6 +82,7 @@ export const BookmarkSaveModal: React.FC = () => {
       classified?: boolean;
       category?: string;
       bookmarkId?: string;
+      error?: string;
     }>({
       type: 'BOOKMARK_CREATE',
       payload: {
@@ -110,18 +112,19 @@ export const BookmarkSaveModal: React.FC = () => {
         }).catch(() => {});
       }
 
-      const cat = response.category ?? modal.suggestedCategory;
-      useContentStore.getState().pushToast({
-        type: 'success',
-        message: cat ? `已收藏并归入「${cat}」` : '已收藏当前页面',
+      const toast = getBookmarkCreateToastMessage(response, {
+        quickLabel: '已收藏当前页面',
       });
+      useContentStore.getState().pushToast(toast);
       await loadBookmarks();
       hideBookmarkSaveModal();
     } else {
-      useContentStore.getState().pushToast({
-        type: 'error',
-        message: '收藏失败',
-      });
+      useContentStore.getState().pushToast(
+        getBookmarkCreateToastMessage({
+          success: false,
+          error: response?.error,
+        }),
+      );
     }
     setSaving(false);
   }, [
